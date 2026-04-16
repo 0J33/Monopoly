@@ -1,0 +1,19 @@
+[Unit]
+Description=Monopoly (ojee.net) Node/Socket.io backend
+After=network.target mongod.service
+Wants=mongod.service
+
+[Service]
+Type=simple
+User=disinteg
+WorkingDirectory=/home/disinteg/monopoly-server
+ExecStart=/home/disinteg/.nvm/versions/node/v22.22.2/bin/node index.js
+Restart=on-failure
+RestartSec=3s
+Environment=NODE_ENV=production
+EnvironmentFile=/home/disinteg/monopoly-server/.env
+StandardOutput=append:/home/disinteg/monopoly-server.log
+StandardError=append:/home/disinteg/monopoly-server.log
+
+[Install]
+WantedBy=multi-user.target

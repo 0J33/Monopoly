@@ -1,0 +1,200 @@
+/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+    /* Background ramp — nearly-black with a cool tint. Three levels let us stack
+       panels (bg → surface → surface-2) without resorting to borders everywhere. */
+    --bg:         #0b0f17;
+    --bg-1:       #10161f;
+    --surface:    #161d29;
+    --surface-2:  #1c2433;
+    --surface-3:  #242d3e;
+    --border:     #2a3346;
+    --border-2:   #3a4560;
+
+    /* Text ramp */
+    --text:       #e8ecf4;
+    --text-2:     #b0b9cc;
+    --text-3:     #7c8699;
+    --text-4:     #525c6e;
+
+    /* Accents */
+    --accent:       #4c8dff;
+    --accent-2:     #6fa6ff;
+    --accent-soft:  rgba(76, 141, 255, 0.15);
+    --success:      #34d399;
+    --warning:      #fbbf24;
+    --danger:       #f87171;
+    --money:        #34d399;
+
+    /* Property-group colors — match server boards.js */
+    --g-brown:  #955436;
+    --g-lblue:  #aae0fa;
+    --g-pink:   #d93a96;
+    --g-orange: #f7941d;
+    --g-red:    #ed1b24;
+    --g-yellow: #fef200;
+    --g-green:  #1fb25a;
+    --g-dblue:  #0072bb;
+
+    --radius:    10px;
+    --radius-lg: 14px;
+    --radius-sm: 6px;
+
+    --shadow:       0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-lg:    0 8px 30px rgba(0, 0, 0, 0.45);
+    --shadow-glow:  0 0 24px -6px var(--accent);
+
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --ease:     cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;  /* kill iOS double-tap zoom on buttons */
+}
+#root { display: flex; flex-direction: column; }
+
+/* Safe-area padding for phones with notches / home indicators. */
+@supports (padding: max(0px)) {
+    body {
+        padding-left:   env(safe-area-inset-left);
+        padding-right:  env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ─── Responsive tweaks ──────────────────────────────────────────────────── */
+@media (max-width: 819px) {
+    .mobile-stack { display: flex !important; flex-direction: column !important; }
+    .desktop-only { display: none !important; }
+}
+@media (min-width: 820px) {
+    .mobile-only { display: none !important; }
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: inherit;
+}
+input, select, textarea {
+    font-family: inherit;
+    color: inherit;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s var(--ease);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+::selection { background: var(--accent-soft); color: var(--text); }
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
+
+/* ─── Shared components ─────────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.15s var(--ease);
+}
+.btn:hover:not(:disabled) {
+    background: var(--surface-3);
+    border-color: var(--border-2);
+    transform: translateY(-1px);
+}
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+.btn.primary:hover:not(:disabled) {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+    box-shadow: var(--shadow-glow);
+}
+.btn.danger {
+    background: transparent;
+    border-color: var(--danger);
+    color: var(--danger);
+}
+.btn.danger:hover:not(:disabled) {
+    background: var(--danger);
+    color: white;
+}
+.btn.ghost { background: transparent; }
+.btn.ghost:hover:not(:disabled) { background: var(--surface-2); }
+.btn.sm { padding: 6px 10px; font-size: 12px; gap: 4px; }
+.btn.lg { padding: 14px 24px; font-size: 16px; }
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+}
+
+.money { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--money); font-weight: 600; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.dot {
+    width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.3);
+}
+
+/* Fade + slide utilities for modal + toast transitions */
+.fade-in { animation: fadeIn 0.2s var(--ease-out) both; }
+.slide-up { animation: slideUp 0.25s var(--ease-out) both; }
+.slide-in-right { animation: slideInRight 0.25s var(--ease-out) both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: none; } }
+
+/* A subtle moving grid background used on the home + lobby screens. */
+.grid-bg {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(76,141,255,0.12), transparent 60%),
+      radial-gradient(900px 500px at 120% 100%, rgba(52,211,153,0.08), transparent 60%),
+      var(--bg);
+}

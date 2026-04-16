@@ -1,0 +1,55 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# deps
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+
+# build artifacts
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editors / os
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# coverage / cache
+coverage/
+.nyc_output/
+.eslintcache
+.cache/
+.parcel-cache/
+
+# local dbs / dumps
+*.sqlite
+*.sqlite3
+*.db
+mongo-data/
+dump/
+
+# pm2 / runtime
+.pm2/
+*.pid
+
+# tooling
+.turbo/
+.next/

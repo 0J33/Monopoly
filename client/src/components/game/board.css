@@ -1,0 +1,321 @@
+/* ─── Board layout ──────────────────────────────────────────────────────────── */
+.board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background:
+        radial-gradient(ellipse at center, rgba(76,141,255,0.06), transparent 60%),
+        linear-gradient(160deg, #0f151f, #0a0e15);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg), inset 0 0 40px rgba(0,0,0,0.4);
+    user-select: none;
+    overflow: hidden;
+}
+
+.tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.tile.clickable { cursor: pointer; }
+.tile.clickable:hover {
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    z-index: 5;
+}
+.tile.mortgaged { filter: grayscale(0.75) brightness(0.55); }
+
+.tile-name {
+    font-size: 0.95vmin;
+    font-weight: 700;
+    line-height: 1.08;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    text-align: center;
+    padding: 0 2px;
+    max-width: 100%;
+    /* Allow multi-word names to break at spaces onto a second line; never
+       split inside a word. If even two lines aren't enough, ellipsis. */
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    hyphens: none;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tile-price {
+    font-size: 1.15vmin;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-2);
+    letter-spacing: 0.3px;
+}
+
+.houses-row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 0;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+.house {
+    width: 0.9vmin; height: 0.9vmin;
+    background: var(--g-green);
+    border: 1px solid rgba(0,0,0,0.4);
+    border-radius: 1px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
+}
+.hotel {
+    width: 1.6vmin; height: 0.9vmin;
+    background: var(--g-red);
+    border: 1px solid rgba(0,0,0,0.4);
+    border-radius: 1px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
+}
+
+/* ─── Player tokens ─────────────────────────────────────────────────────────── */
+.token {
+    position: absolute;
+    width: 2.4vmin;
+    height: 2.4vmin;
+    min-width: 20px;
+    min-height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.85);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 0 3px rgba(0,0,0,0.25);
+    transition: left 0.15s ease-in-out, top 0.15s ease-in-out;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    font-size: 1vmin;
+    font-weight: 800;
+    transform: translate(-50%, -50%);
+    will-change: left, top;
+}
+.token.active {
+    border-color: white;
+    box-shadow:
+        0 0 0 3px rgba(255,255,255,0.6),
+        0 0 16px 4px var(--accent),
+        0 2px 6px rgba(0,0,0,0.5);
+    animation: tokenPulse 1.4s ease-in-out infinite;
+}
+@keyframes tokenPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50%      { transform: translate(-50%, -50%) scale(1.18); }
+}
+.token.shake {
+    animation: tokenShake 0.55s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes tokenShake {
+    10%, 90% { transform: translate(calc(-50% - 2px), -50%); }
+    20%, 80% { transform: translate(calc(-50% + 3px), -50%); }
+    30%, 50%, 70% { transform: translate(calc(-50% - 5px), -50%); }
+    40%, 60% { transform: translate(calc(-50% + 5px), -50%); }
+}
+
+/* ─── Center of the board ───────────────────────────────────────────────────── */
+.board-center {
+    position: absolute;
+    left: 13%; top: 13%;
+    width: 74%; height: 74%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    pointer-events: none;
+    padding: 2vmin;
+}
+
+/* Inner stack: dice on top, roller label, then the action bar. Stretched to
+   fill the full center height so the buttons get all the room they need. */
+.center-stack {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2vmin;
+    height: 100%;
+    width: 100%;
+    padding: 2vmin;
+}
+
+.brand {
+    font-weight: 900;
+    font-size: 10vmin;
+    letter-spacing: -4px;
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transform: rotate(-45deg);
+    opacity: 0.06;
+    position: absolute;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* ─── Dice ──────────────────────────────────────────────────────────────────── */
+.dice-wrap {
+    display: flex;
+    gap: 14px;
+    padding: 10px;
+    pointer-events: auto;
+}
+.die {
+    width: 6vmin; height: 6vmin;
+    min-width: 42px; min-height: 42px;
+    background: white;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 -3px 4px rgba(0,0,0,0.12);
+}
+/* Roll animation. No pre-roll idle shake — the dice stay still until the
+   player hits Roll. During the roll the dice jitter (translate + scale +
+   tiny wiggle, NO full rotation) so the slot-machine face cycling in
+   Dice.js is always readable. At the end there's a small settle pop on
+   the real face. */
+.die.rolling { animation: diceRoll 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes diceRoll {
+    0%   { transform: translate(0,0)         rotate(0)     scale(1); }
+    5%   { transform: translate(-6px, 3px)   rotate(-5deg) scale(1.08); }
+    12%  { transform: translate(5px,-4px)    rotate(6deg)  scale(1.12); }
+    20%  { transform: translate(-7px, 4px)   rotate(-7deg) scale(1.1); }
+    28%  { transform: translate(6px,-5px)    rotate(8deg)  scale(1.15); }
+    36%  { transform: translate(-5px, 3px)   rotate(-6deg) scale(1.12); }
+    44%  { transform: translate(7px,-4px)    rotate(7deg)  scale(1.16); }
+    52%  { transform: translate(-4px, 2px)   rotate(-4deg) scale(1.14); }
+    60%  { transform: translate(3px,-2px)    rotate(3deg)  scale(1.12); }
+    70%  { transform: translate(-2px, 1px)   rotate(-2deg) scale(1.1); }
+    /* Settle: center up, big pop on the locked-in face, ease to rest. */
+    80%  { transform: translate(0,0)         rotate(0)     scale(1.28); }
+    90%  { transform: translate(0,0)         rotate(0)     scale(0.96); }
+    100% { transform: translate(0,0)         rotate(0)     scale(1); }
+}
+.die-pip {
+    background: #111;
+    border-radius: 50%;
+    width: 70%; height: 70%;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.15);
+}
+
+/* ─── Popups / card ────────────────────────────────────────────────────────── */
+.prop-popup {
+    position: absolute;
+    z-index: 50;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    min-width: 260px;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* ─── Board overlay animations ──────────────────────────────────────────────── */
+.board-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 30;
+    overflow: hidden;
+}
+.money-pop {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-weight: 800;
+    font-size: 1.7vmin;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(15,21,31,0.9);
+    border: 1px solid var(--border-2);
+    transform: translate(-50%, -50%);
+    animation: moneyPop 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: var(--shadow);
+    white-space: nowrap;
+}
+.money-pop.positive { color: var(--success); border-color: var(--success); }
+.money-pop.negative { color: var(--danger);  border-color: var(--danger);  }
+@keyframes moneyPop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    80%  { opacity: 1; transform: translate(-50%, calc(-50% - 40px)) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, calc(-50% - 64px)) scale(0.95); }
+}
+
+.go-burst {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-weight: 900;
+    color: var(--success);
+    font-size: 3vmin;
+    font-family: var(--font-mono);
+    text-shadow: 0 0 20px var(--success);
+    animation: goBurst 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: none;
+}
+@keyframes goBurst {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
+    30%  { transform: translate(-50%, -50%) scale(1); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, calc(-50% - 80px)) scale(0.9); }
+}
+
+.jail-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(248, 113, 113, 0.25), transparent 60%);
+    animation: jailFlash 0.9s ease-out forwards;
+    pointer-events: none;
+}
+@keyframes jailFlash {
+    0%, 100% { opacity: 0; }
+    30%      { opacity: 1; }
+}
+
+.buy-sparkle {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 4vmin; height: 4vmin;
+    border-radius: 50%;
+    animation: buySparkle 0.9s ease-out forwards;
+    pointer-events: none;
+}
+@keyframes buySparkle {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); box-shadow: 0 0 0 0 currentColor; }
+    40%  { opacity: 1; transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 12px currentColor; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 0 24px transparent; }
+}
+
+.banner {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 4vmin;
+    animation: bannerIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: none;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+}
+@keyframes bannerIn {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(2.5); letter-spacing: 20px; }
+    25%  { opacity: 1; transform: translate(-50%, -50%) scale(1); letter-spacing: 4px; }
+    75%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
