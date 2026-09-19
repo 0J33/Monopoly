@@ -15,7 +15,7 @@ import TradeModal from './TradeModal';
 import PropertyModal from './PropertyModal';
 import SoundToggle from './SoundToggle';
 import Victory from './Victory';
-import DieFace from '../common/DieFace';
+import Logo from '../common/Logo';
 import { LogOut, Copy, ScrollText } from 'lucide-react';
 
 export default function Game({ userId, pushToast }) {
@@ -102,7 +102,7 @@ export default function Game({ userId, pushToast }) {
             }}>
                 <header style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '8px 10px' }}>
                     <button className="btn ghost sm" onClick={() => nav('/')}><LogOut size={13} /></button>
-                    <DieFace value={5} size={22} />
+                    <Logo size={22} />
                     <div className="chip" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{roomCode}</div>
                     <button className="btn sm ghost" onClick={copyLink}><Copy size={12} /></button>
                     <div style={{ flex: 1 }} />
@@ -138,7 +138,7 @@ export default function Game({ userId, pushToast }) {
             <aside style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
                 <header style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <button className="btn ghost sm" onClick={() => nav('/')}><LogOut size={13} /></button>
-                    <DieFace value={5} size={22} />
+                    <Logo size={22} />
                     <div className="chip" style={{ fontFamily: 'var(--font-mono)' }}>{roomCode}</div>
                     <button className="btn sm ghost" onClick={copyLink}><Copy size={12} /></button>
                     <div style={{ flex: 1 }} />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { Dice5, Users, Sparkles, PencilRuler } from 'lucide-react';
 import TokenPicker from './TokenPicker';
-import DieFace from '../common/DieFace';
+import Logo from '../common/Logo';
 import useIsMobile from '../../useIsMobile';
 
 export default function Home({ pushToast }) {
@@ -52,7 +52,7 @@ export default function Home({ pushToast }) {
             <div style={{ maxWidth: 1120, margin: '0 auto', padding: isMobile ? '24px 14px' : '48px 24px' }}>
                 <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 24 : 48 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <DieFace value={5} size={44} />
+                        <Logo size={44} />
                         <div>
                             <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }}>Monopoly</div>
                             <div style={{ color: 'var(--text-3)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>ojee.net</div>
