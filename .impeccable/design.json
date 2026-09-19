@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-20T00:00:00Z",
+  "title": "Design System: Monopoly",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Card Stock", "canonical": "#f3ead3", "tonalRamp": ["#2a2517", "#463d26", "#655838", "#87764e", "#a89468", "#c4b48c", "#ded0ae", "#f3ead3"] },
+      "paper-2": { "role": "neutral", "displayName": "Card Under Card", "canonical": "#e6dabb", "tonalRamp": ["#26210f", "#413821", "#5f5232", "#806f47", "#a08c60", "#bda981", "#d4c4a0", "#e6dabb"] },
+      "paper-3": { "role": "neutral", "displayName": "Third Card Down", "canonical": "#d8caa6", "tonalRamp": ["#221d0d", "#3b331c", "#584c2d", "#776840", "#968559", "#b2a178", "#c8b891", "#d8caa6"] },
+      "ink": { "role": "neutral", "displayName": "Printing Ink", "canonical": "#1d1911", "tonalRamp": ["#1d1911", "#332c1e", "#4b4333", "#6f6450", "#948771", "#b8ab95", "#d8ccba", "#f2ece1"] },
+      "ink-2": { "role": "neutral", "displayName": "Ink, Second Pass", "canonical": "#4b4333" },
+      "ink-3": { "role": "neutral", "displayName": "Faded Ink (contrast floor on paper)", "canonical": "#6f6450" },
+      "rule": { "role": "neutral", "displayName": "Printed Hairline", "canonical": "rgba(29, 25, 17, 0.2)" },
+      "rule-2": { "role": "neutral", "displayName": "Ruled Row Line", "canonical": "rgba(29, 25, 17, 0.1)" },
+      "chance": { "role": "primary", "displayName": "Chance Orange", "canonical": "#f08a1c", "tonalRamp": ["#2d1600", "#4d2600", "#733a00", "#9a5005", "#c26a0c", "#f08a1c", "#f7ae62", "#fdd7ad"] },
+      "chance-ink": { "role": "primary", "displayName": "Chance Band Ink", "canonical": "#3a1d00" },
+      "chest": { "role": "primary", "displayName": "Community Chest Blue", "canonical": "#2f78d0", "tonalRamp": ["#08182c", "#0e2a4d", "#143e72", "#1c5499", "#256ac0", "#2f78d0", "#74a6e3", "#bcd5f4"] },
+      "chest-ink": { "role": "primary", "displayName": "Chest Band Ink", "canonical": "#f3f7ff" },
+      "gold": { "role": "primary", "displayName": "Table Gold", "canonical": "#f6c445", "tonalRamp": ["#2e2205", "#4d390a", "#715310", "#966f17", "#bd8d1f", "#e0ab2e", "#f6c445", "#ffdf90"] },
+      "gold-2": { "role": "primary", "displayName": "Gold Highlight", "canonical": "#ffd968" },
+      "gold-deep": { "role": "primary", "displayName": "Gold Edge", "canonical": "#c8971f" },
+      "felt-hi": { "role": "secondary", "displayName": "Lit Felt", "canonical": "#1a5236", "tonalRamp": ["#040e09", "#081a10", "#0c2619", "#10351f", "#155a3a", "#1a7a4d", "#2aa26a", "#5ccf98"] },
+      "felt-mid": { "role": "secondary", "displayName": "Table Felt", "canonical": "#10351f" },
+      "felt-lo": { "role": "secondary", "displayName": "Table Edge", "canonical": "#081a10" },
+      "stamp-red": { "role": "tertiary", "displayName": "Cancellation Red", "canonical": "#b3261e", "tonalRamp": ["#2b0806", "#4a0e0a", "#6d1610", "#911e16", "#b3261e", "#d3453d", "#e98a85", "#f8c9c6"] },
+      "note-green": { "role": "tertiary", "displayName": "Bank Note Green", "canonical": "#d9ecd0" },
+      "note-green-ink": { "role": "tertiary", "displayName": "Bank Note Ink", "canonical": "#173a16" },
+      "bg": { "role": "neutral", "displayName": "Table Night (board layer)", "canonical": "#0c1210", "tonalRamp": ["#060a08", "#0c1210", "#111813", "#15201a", "#1c2a22", "#26362c", "#3d5142", "#6b8074"] },
+      "bg-1": { "role": "neutral", "displayName": "Dark Ramp 1", "canonical": "#111813" },
+      "surface": { "role": "neutral", "displayName": "Dark Surface", "canonical": "#15201a" },
+      "surface-2": { "role": "neutral", "displayName": "Dark Surface Raised", "canonical": "#1c2a22" },
+      "surface-3": { "role": "neutral", "displayName": "Dark Surface Hover", "canonical": "#26362c" },
+      "border": { "role": "neutral", "displayName": "Dark Stroke", "canonical": "#2c3b31" },
+      "border-2": { "role": "neutral", "displayName": "Dark Stroke Strong", "canonical": "#3d5142" },
+      "text": { "role": "neutral", "displayName": "Warm Off-White", "canonical": "#eef2ec" },
+      "text-2": { "role": "neutral", "displayName": "Muted Off-White", "canonical": "#b6c2b6" },
+      "text-3": { "role": "neutral", "displayName": "Dim Off-White (contrast floor on dark)", "canonical": "#869382" },
+      "money": { "role": "tertiary", "displayName": "Cash Green", "canonical": "#46d38a" },
+      "success": { "role": "tertiary", "displayName": "Agreement Green", "canonical": "#34d399" },
+      "danger": { "role": "tertiary", "displayName": "Debt Red", "canonical": "#f87171" },
+      "info": { "role": "tertiary", "displayName": "Info Blue (board layer)", "canonical": "#4c8dff" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Printed Display", "purpose": "Wordmark, deck titles, deed names, victory name. Barlow Condensed 700 uppercase." },
+      "headline": { "displayName": "Card Head", "purpose": "The head of a card or tray: 'The board', 'House rules', tray titles." },
+      "title": { "displayName": "Title", "purpose": "Seat names, board names in the chooser, rent values. Inter, sentence case." },
+      "body": { "displayName": "Body", "purpose": "Descriptions, hints, deed footer prose. Inter 400-600 at 13-15px." },
+      "label": { "displayName": "Printed Label", "purpose": "The print-sm stamp: field labels, felt section headers, seat tags. Condensed uppercase at 0.06-0.08em." },
+      "mono": { "displayName": "Money & Codes", "purpose": "Every currency figure, room code, bid and rank row. Tabular numerals, always." },
+      "emblem": { "displayName": "Legacy Emblem Face", "purpose": "Fredoka. Confined to the board's centre diamond emblem and banners; not for new surfaces." }
+    },
+    "shadows": [
+      { "name": "card-on-table", "value": "0 1px 1px rgba(0,0,0,0.35), 0 10px 24px -6px rgba(0,0,0,0.6), 0 24px 48px -18px rgba(0,0,0,0.55)", "purpose": "Every .paper card stock surface. Paired with inset 0 1px 0 rgba(255,255,255,0.6) as the lit top edge." },
+      { "name": "card-under-card", "value": "0 1px 1px rgba(0,0,0,0.3), 0 8px 18px -6px rgba(0,0,0,0.5)", "purpose": "The two deck-under layers peeking out beneath a deck's top card." },
+      { "name": "mini-deed", "value": "0 1px 1px rgba(0,0,0,0.35), 0 6px 14px -6px rgba(0,0,0,0.6)", "purpose": "A deed small enough to hold, in the trade table or your deeds." },
+      { "name": "tray-on-felt", "value": "inset 0 0 0 1px rgba(0,0,0,0.4), 0 30px 60px -20px rgba(0,0,0,0.8)", "purpose": "Full-menu felt trays lifted well off the board." },
+      { "name": "puck-gloss", "value": "0 2px 5px rgba(0,0,0,0.55), inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45)", "purpose": "Token pucks, read as moulded plastic." },
+      { "name": "puck-selected", "value": "0 0 0 3px #1d1911, 0 0 0 5px #f6c445, 0 6px 10px rgba(0,0,0,0.45)", "purpose": "The chosen token: a double ring of ink then gold." },
+      { "name": "btn-ink", "value": "0 1px 0 rgba(255,255,255,0.15) inset, 0 3px 8px -2px rgba(0,0,0,0.45)", "purpose": "The ink button printed on card stock." },
+      { "name": "panel", "value": "0 2px 8px rgba(0,0,0,0.3)", "purpose": "Board-layer surfaces: player panels, popups, money pops." },
+      { "name": "panel-lg", "value": "0 8px 30px rgba(0,0,0,0.5)", "purpose": "Board-layer modals, the board itself, property popups." },
+      { "name": "gold-glow", "value": "0 0 24px -4px #f6c445", "purpose": "Board-layer only: gold CTA hover and the active player's token halo." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for background, border and colour transitions." },
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Easing for anything that moves or lifts: the deal, deck fan, card lifts." },
+      { "name": "deal", "value": "animation: deal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; @keyframes deal { from { opacity: 0; transform: translateY(18px) rotate(-1.5deg); } to { opacity: 1; transform: none; } }", "purpose": "The one authored moment per screen: a card dealt onto the table. Stagger .d2 at 70ms, .d3 at 140ms. Disabled under prefers-reduced-motion." },
+      { "name": "lift", "value": "transform: translateY(-2px)", "purpose": "Hover response on pucks, mini-deeds and buttons. -4px only for a picked mini-deed." },
+      { "name": "deck-fan", "value": "transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Hovering a deck fans its under-cards wider." }
+    ],
+    "breakpoints": [
+      { "name": "card-hand", "value": "600px" },
+      { "name": "trade-stack", "value": "640px" },
+      { "name": "auction-narrow", "value": "720px" },
+      { "name": "home-stack", "value": "820px" },
+      { "name": "lobby-stack", "value": "860px" },
+      { "name": "seats-single", "value": "440px" },
+      { "name": "home-tight", "value": "420px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Card Stock (framed)",
+      "kind": "card",
+      "refersTo": "card-stock",
+      "description": "The base surface for every menu: cream stock with paper grain, a lit top edge, a table shadow, and a printed hairline frame inset 7px.",
+      "html": "<div class=\"ds-paper\"><div class=\"ds-paper-body\"><div class=\"ds-label\">Pick a board</div><div class=\"ds-title\">World Tour</div><p class=\"ds-body\">Cities around the world · Cairo → Tokyo</p></div></div>",
+      "css": ".ds-paper { position: relative; width: 300px; background-color: #f3ead3; background-image: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.25  0 0 0 0 0.15  0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>\"); color: #1d1911; border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 1px rgba(0,0,0,0.35), 0 10px 24px -6px rgba(0,0,0,0.6), 0 24px 48px -18px rgba(0,0,0,0.55); } .ds-paper::after { content: ''; position: absolute; inset: 7px; border: 1.5px solid rgba(29,25,17,0.2); border-radius: 7px; pointer-events: none; } .ds-paper-body { padding: 16px 22px 22px; } .ds-label { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; line-height: 1.1; color: #6f6450; margin-bottom: 6px; } .ds-title { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 0.95; font-size: 26px; } .ds-body { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.35; color: #6f6450; margin: 4px 0 0; }"
+    },
+    {
+      "name": "Deck",
+      "kind": "custom",
+      "refersTo": "card-stock",
+      "description": "The signature home/lobby object: a banded top card with two cards peeking out beneath, fanning wider on hover.",
+      "html": "<section class=\"ds-deck\"><div class=\"ds-deck-under ds-u1\"></div><div class=\"ds-deck-under ds-u2\"></div><div class=\"ds-deck-card\"><div class=\"ds-band ds-band-chance\"><span class=\"ds-deck-title\">Start a game</span></div><div class=\"ds-deck-inner\"><div class=\"ds-deck-note\">You'll get a link and a code to send everyone.</div></div></div></section>",
+      "css": ".ds-deck { position: relative; isolation: isolate; width: 320px; } .ds-deck-under { position: absolute; inset: 0; border-radius: 12px; background: #e6dabb; box-shadow: 0 1px 1px rgba(0,0,0,0.3), 0 8px 18px -6px rgba(0,0,0,0.5); z-index: -1; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); } .ds-u1 { transform: translate(7px, 8px) rotate(1.8deg); background: #d8caa6; } .ds-u2 { transform: translate(-4px, 5px) rotate(-1.2deg); } .ds-deck:hover .ds-u1 { transform: translate(9px, 11px) rotate(2.6deg); } .ds-deck:hover .ds-u2 { transform: translate(-6px, 7px) rotate(-1.8deg); } .ds-deck-card { position: relative; background: #f3ead3; color: #1d1911; border-radius: 12px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 1px rgba(0,0,0,0.35), 0 10px 24px -6px rgba(0,0,0,0.6), 0 24px 48px -18px rgba(0,0,0,0.55); } .ds-band { display: flex; align-items: center; gap: 10px; padding: 16px 20px 14px; border-bottom: 1.5px solid rgba(0,0,0,0.25); } .ds-band-chance { background: #f08a1c; color: #3a1d00; } .ds-deck-title { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 0.95; font-size: 34px; } .ds-deck-inner { padding: 16px 22px 22px; } .ds-deck-note { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; line-height: 1.45; color: #6f6450; }"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The primary action printed on card stock: solid ink, condensed uppercase, a lift shadow and a lit top edge.",
+      "html": "<button class=\"ds-btn-ink\">Create room <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; background: #1d1911; border: 1px solid #1d1911; border-radius: 10px; color: #f3ead3; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 18px; cursor: pointer; box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 3px 8px -2px rgba(0,0,0,0.45); transition: all 0.15s cubic-bezier(0.22,1,0.36,1); } .ds-btn-ink:hover { background: #000; border-color: #000; color: #fff; transform: translateY(-1px); } .ds-btn-ink:focus-visible { outline: 2px solid #f08a1c; outline-offset: 2px; } .ds-btn-ink:active { transform: translateY(0); } .ds-btn-ink:disabled { opacity: 0.35; cursor: not-allowed; }"
+    },
+    {
+      "name": "Paper Ghost Button",
+      "kind": "button",
+      "refersTo": "button-paper-ghost",
+      "description": "The secondary action on card stock: a printed hairline box with ink type, filling faintly on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Go bankrupt</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; background: transparent; border: 1px solid rgba(29,25,17,0.2); border-radius: 10px; color: #1d1911; font-family: 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s cubic-bezier(0.22,1,0.36,1); } .ds-btn-ghost:hover { background: rgba(29,25,17,0.06); border-color: #6f6450; transform: translateY(-1px); } .ds-btn-ghost:focus-visible { outline: 2px solid #f08a1c; outline-offset: 2px; }"
+    },
+    {
+      "name": "Gold Button (board layer)",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "The legacy primary CTA on dark surfaces: a gold gradient with a deep bottom edge that compresses on press. Board and game chrome only.",
+      "html": "<button class=\"ds-btn-gold\">Roll dice</button>",
+      "css": ".ds-btn-gold { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; background: linear-gradient(180deg, #ffd968, #f6c445); border: 1px solid #c8971f; border-radius: 10px; color: #2a1e05; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 16px; cursor: pointer; text-shadow: 0 1px 0 rgba(255,255,255,0.25); box-shadow: 0 2px 0 #c8971f, 0 2px 8px rgba(0,0,0,0.3); transition: all 0.15s cubic-bezier(0.22,1,0.36,1); } .ds-btn-gold:hover { background: linear-gradient(180deg, #ffe081, #ffd968); box-shadow: 0 3px 0 #c8971f, 0 0 24px -4px #f6c445; transform: translateY(-1px); } .ds-btn-gold:active { transform: translateY(1px); box-shadow: 0 1px 0 #c8971f; } .ds-btn-gold:focus-visible { outline: 2px solid #f6c445; outline-offset: 2px; }"
+    },
+    {
+      "name": "Fill-In Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Not a box: a translucent wash over a 2px ink baseline, as though written into a blank on a card. The code variant is wide-tracked mono.",
+      "html": "<div class=\"ds-field-wrap\"><label class=\"ds-field-label\" for=\"ds-n\">Your name</label><input id=\"ds-n\" class=\"ds-field\" placeholder=\"Type your name\" /><input class=\"ds-field ds-field-code\" placeholder=\"ABC123\" /></div>",
+      "css": ".ds-field-wrap { width: 300px; display: flex; flex-direction: column; gap: 10px; } .ds-field-label { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; color: #6f6450; } .ds-field { width: 100%; background: rgba(255,255,255,0.35); border: none; border-bottom: 2px solid #1d1911; border-radius: 4px 4px 0 0; padding: 8px 10px 7px; color: #1d1911; font-family: 'Inter', system-ui, sans-serif; font-size: 17px; font-weight: 600; transition: background 0.15s cubic-bezier(0.22,1,0.36,1), border-color 0.15s cubic-bezier(0.22,1,0.36,1); } .ds-field::placeholder { color: #6f6450; font-weight: 500; } .ds-field:focus { background: rgba(255,255,255,0.7); border-color: #f08a1c; outline: none; } .ds-field-code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; letter-spacing: 0.35em; text-transform: uppercase; text-align: center; }"
+    },
+    {
+      "name": "Token Puck",
+      "kind": "chip",
+      "refersTo": "puck",
+      "description": "The glossy playing piece, used as swatch, avatar and picker. Selected state lifts and scales inside a double ring of ink then gold.",
+      "html": "<div class=\"ds-puck-row\"><button class=\"ds-puck ds-puck-red\">C</button><button class=\"ds-puck ds-puck-blue ds-picked\">D</button><button class=\"ds-puck ds-puck-red\" disabled>B</button></div>",
+      "css": ".ds-puck-row { display: flex; gap: 8px; } .ds-puck { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 2px 5px rgba(0,0,0,0.55), inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45); display: grid; place-items: center; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 14px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); cursor: pointer; transition: transform 0.15s cubic-bezier(0.16,1,0.3,1), box-shadow 0.15s cubic-bezier(0.16,1,0.3,1); } .ds-puck-red { background: radial-gradient(circle at 34% 28%, #f79a97, #ed1b24 68%); } .ds-puck-blue { background: radial-gradient(circle at 34% 28%, #83b5e8, #0072bb 68%); } .ds-puck:hover:not(:disabled) { transform: translateY(-2px); } .ds-puck:disabled { opacity: 0.22; cursor: not-allowed; } .ds-picked { transform: translateY(-2px) scale(1.08); box-shadow: 0 0 0 3px #1d1911, 0 0 0 5px #f6c445, 0 6px 10px rgba(0,0,0,0.45); } .ds-puck:focus-visible { outline: 2px solid #f6c445; outline-offset: 2px; }"
+    },
+    {
+      "name": "Title Deed",
+      "kind": "custom",
+      "refersTo": "card-stock",
+      "description": "The signature in-game card: property colour band inset inside the frame, condensed name, a ruled rent ladder whose live row inverts to ink-on-paper, mono figures in the footer.",
+      "html": "<div class=\"ds-deed\"><div class=\"ds-deed-band\"><div class=\"ds-deed-name\">Boardwalk</div></div><div class=\"ds-deed-body\"><div class=\"ds-deed-rents\"><div class=\"ds-deed-line\"><span>Rent</span><span class=\"ds-mono\">$50</span></div><div class=\"ds-deed-line\"><span>With 1 house</span><span class=\"ds-mono\">$200</span></div><div class=\"ds-deed-line ds-on\"><span>With 4 houses</span><span class=\"ds-mono\">$1,700</span></div><div class=\"ds-deed-line\"><span>With hotel</span><span class=\"ds-mono\">$2,000</span></div></div><div class=\"ds-deed-foot\">Mortgage value <b class=\"ds-mono\">$200</b> · price <b class=\"ds-mono\">$400</b></div></div></div>",
+      "css": ".ds-deed { position: relative; width: 300px; overflow: hidden; background-color: #f3ead3; color: #1d1911; border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 1px rgba(0,0,0,0.35), 0 10px 24px -6px rgba(0,0,0,0.6), 0 24px 48px -18px rgba(0,0,0,0.55); } .ds-deed::after { content: ''; position: absolute; inset: 7px; border: 1.5px solid rgba(29,25,17,0.2); border-radius: 7px; pointer-events: none; } .ds-deed-band { margin: 12px 12px 0; padding: 10px 12px 12px; text-align: center; border-radius: 4px; border: 1.5px solid rgba(0,0,0,0.3); background: #0072bb; color: #fff; } .ds-deed-name { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 30px; line-height: 0.95; padding: 4px 0 2px; } .ds-deed-body { padding: 10px 20px 18px; } .ds-deed-rents { display: flex; flex-direction: column; } .ds-deed-rents > * + * { border-top: 1px solid rgba(29,25,17,0.1); } .ds-deed-line { display: flex; justify-content: space-between; gap: 10px; padding: 4px 6px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; border-radius: 4px; } .ds-on { background: #1d1911; color: #f3ead3; } .ds-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; } .ds-deed-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(29,25,17,0.2); font-family: 'Inter', system-ui, sans-serif; font-size: 12.5px; line-height: 1.55; color: #4b4333; text-align: center; }"
+    },
+    {
+      "name": "Mini Deed",
+      "kind": "card",
+      "refersTo": "mini-deed",
+      "description": "A deed small enough to hold, used in the trade table and your-deeds hand. Lifts on hover; a picked card takes a gold border and a 4px lift.",
+      "html": "<div class=\"ds-hand\"><button class=\"ds-mini\"><span class=\"ds-mini-band\" style=\"background:#ed1b24\"></span><span class=\"ds-mini-body\"><span class=\"ds-mini-name\">Illinois Ave</span><span class=\"ds-mini-meta\">$240 · 2 houses</span></span></button><button class=\"ds-mini ds-mini-picked\"><span class=\"ds-mini-band\" style=\"background:#0072bb\"></span><span class=\"ds-mini-body\"><span class=\"ds-mini-name\">Boardwalk</span><span class=\"ds-mini-meta\">$400</span></span></button></div>",
+      "css": ".ds-hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; width: 300px; } .ds-mini { display: flex; flex-direction: column; width: 100%; text-align: left; background: #f3ead3; color: #1d1911; border-radius: 8px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 1px rgba(0,0,0,0.35), 0 6px 14px -6px rgba(0,0,0,0.6); border: 2px solid transparent; padding: 0; transition: transform 0.15s cubic-bezier(0.16,1,0.3,1), border-color 0.15s cubic-bezier(0.16,1,0.3,1), box-shadow 0.15s cubic-bezier(0.16,1,0.3,1); } .ds-mini:hover { transform: translateY(-2px); } .ds-mini-picked { border-color: #f6c445; transform: translateY(-4px); box-shadow: 0 0 0 2px rgba(246,196,69,0.35), 0 10px 18px -6px rgba(0,0,0,0.7); } .ds-mini:focus-visible { outline: 2px solid #f08a1c; outline-offset: 2px; } .ds-mini-band { height: 12px; border-bottom: 1px solid rgba(0,0,0,0.25); } .ds-mini-body { padding: 7px 9px 8px; min-width: 0; } .ds-mini-name { display: block; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 16px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-mini-meta { display: block; font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #6f6450; margin-top: 3px; }"
+    },
+    {
+      "name": "Felt Tray",
+      "kind": "nav",
+      "refersTo": "tray",
+      "description": "The full-menu shell for assets and trades: felt background, gold-alpha hairlines under the head and over the foot, a scrolling body holding paper cards.",
+      "html": "<div class=\"ds-tray\"><div class=\"ds-tray-head\"><h2 class=\"ds-tray-title\">Your deeds</h2></div><div class=\"ds-tray-body\"><div class=\"ds-tray-label\">Light blue</div><div class=\"ds-note\">$1,240</div></div><div class=\"ds-tray-foot\"><button class=\"ds-tray-btn\">Close</button></div></div>",
+      "css": ".ds-tray { width: 340px; border-radius: 16px; border: 1px solid rgba(246,196,69,0.35); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 30px 60px -20px rgba(0,0,0,0.8); color: #eef2ec; display: flex; flex-direction: column; overflow: hidden; background-color: #10351f; background-image: radial-gradient(120% 90% at 50% 18%, #1a5236 0%, #10351f 48%, #081a10 100%); } .ds-tray-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid rgba(246,196,69,0.2); } .ds-tray-title { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 26px; color: #f6c445; margin: 0; } .ds-tray-body { padding: 16px 18px; overflow-y: auto; } .ds-tray-label { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; color: rgba(246,236,210,0.72); margin: 0 0 8px; } .ds-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; background: #d9ecd0; color: #173a16; border: 1px solid rgba(0,0,0,0.2); font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; } .ds-tray-foot { display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-top: 1px solid rgba(246,196,69,0.2); background: rgba(0,0,0,0.2); } .ds-tray-btn { padding: 10px 16px; background: #1c2a22; border: 1px solid #2c3b31; border-radius: 10px; color: #eef2ec; font-family: 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s cubic-bezier(0.22,1,0.36,1); } .ds-tray-btn:hover { background: #26362c; border-color: #3d5142; transform: translateY(-1px); } .ds-tray-btn:focus-visible { outline: 2px solid #f6c445; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Components Dealt Onto the Felt",
+    "overview": "Every surface outside the board is a printed object from the box lying on a green felt table: a deck with two cards peeking out from under the top one, a title deed with its colour band and rent table, a place card you write your name on, a bank note, a bill. The felt is lit from above-centre and falls off toward the table edge; card stock carries a paper grain, an inset highlight on its top edge and a printed hairline frame 7px in from its own edge. Nothing here is a panel with a border; everything is a thing with a shadow under it.\n\nThe system is deliberately two-layered, and the split is real rather than an accident to be cleaned up. The table layer (table.css) — paper, ink, Chance orange, Chest blue, felt — owns the home screen, the lobby and every in-game menu. The table-chrome layer (theme.css) — the dark green-black surface ramp with gold accents — owns the board, the player panels, the action log and the chat/trades drawers, and it is the settled world the paper menus were built to sit on. Menus are cream objects; the app around the board is dark felt and gold. Both are correct; mixing them inside a single element is not.\n\nDensity is generous on the way in (two decks and a place card fill a 1080px column) and tight once play starts (the board is the screen; menus arrive as cards over it). The refused reference is explicit and visible in the diff: the dark-dashboard card grid the home and lobby screens used to be.",
+    "keyCharacteristics": [
+      "Cream card stock on dark felt, never a flat surface panel.",
+      "A printed hairline frame inside every card edge.",
+      "Condensed uppercase for anything printed; Inter for prose; mono for every number.",
+      "Chance orange and Chest blue as the two menu voices, taken from the deck backs.",
+      "One authored motion per screen: the card is dealt."
+    ],
+    "rules": [
+      { "name": "The Two-Table Rule", "body": "Paper tokens and dark-ramp tokens never meet inside one element. A menu is card stock with ink type; the board and its chrome are dark surfaces with gold. A tray is the one sanctioned seam: felt shell, paper cards inside it.", "section": "colors" },
+      { "name": "The Deck-Back Rule", "body": "Orange means start/act/yours; blue means join/receive/theirs. A band colour is chosen from that meaning, never for variety.", "section": "colors" },
+      { "name": "The Ink-Three Floor Rule", "body": "No printed text goes lighter than ink-3 on paper. If a label feels too loud at ink-3, shrink it or letterspace it — do not fade it.", "section": "colors" },
+      { "name": "The Printed-Type Rule", "body": "Anything that would be printed on a physical component is Barlow Condensed uppercase. Anything a player reads as a sentence is Inter. There is no third option.", "section": "typography" },
+      { "name": "The Tabular Money Rule", "body": "Every currency figure is JetBrains Mono with tabular numerals, so a rent table reads as a column and not as ragged prose.", "section": "typography" },
+      { "name": "The Fit-The-Tile Rule", "body": "Tile names size themselves to the tile in container units and hyphenate rather than truncate mid-word (\"PENNSYL-VANIA\"), clamped at three lines. Never chop a name at an arbitrary letter.", "section": "typography" },
+      { "name": "The Lifted-Stock Rule", "body": "Card stock always carries the card shadow and the inset top highlight. A .paper element with a flat drop shadow reads as a div, which is the thing this system exists to refuse.", "section": "elevation" },
+      { "name": "The One-Dealt-Moment Rule", "body": "Each screen gets exactly one authored motion: .dealt (0.42s, rise 18px out of a -1.5° tilt), staggered 0/70/140ms across at most three elements. Hover motion is limited to ±2–4px lifts and the deck fanning wider. Everything is disabled under prefers-reduced-motion.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do build a new menu from an existing printed object — card stock, a deed, a slip, a bill — before reaching for a generic panel.",
+      "Do put the printed frame (inset 7px, 1.5px rule, 7px radius) on every full card; it is the system's signature.",
+      "Do pick band colour by meaning: Chance orange for start/act/yours, Chest blue for join/receive/theirs, property colour for a deed.",
+      "Do set every number in JetBrains Mono with tabular numerals.",
+      "Do let condensed uppercase carry printed labels and Inter carry sentences.",
+      "Do keep the focus ring gold on felt and Chance orange inside paper.",
+      "Do give a new screen exactly one .dealt moment, staggered over at most three elements, and honour prefers-reduced-motion.",
+      "Do size anything inside the board in vmin/cqw so it scales with the board as one object."
+    ],
+    "donts": [
+      "Don't mix the paper palette and the dark ramp inside one element; a tray's felt shell holding paper cards is the only sanctioned seam.",
+      "Don't put a visible outer border on card stock — depth comes from the shadow and the inner frame.",
+      "Don't take printed text below ink-3 on paper, or below text-3 on the dark ramp.",
+      "Don't box an input inside a menu; fields are a translucent wash over a 2px ink baseline.",
+      "Don't add a second animated moment to a screen that already has its deal.",
+      "Don't introduce a new accent hue. Orange, blue, gold, property colours, stamp red and bank-note green are the whole vocabulary.",
+      "Don't truncate a property name mid-word; hyphenate and clamp at three lines instead.",
+      "Don't use Fredoka on any new surface — it is legacy, confined to the board's centre emblem and banners."
+    ]
+  }
+}
