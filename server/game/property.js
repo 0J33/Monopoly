@@ -4,11 +4,26 @@
 const { transfer, tileDef, tileSt, ownedInGroup, ownsFullGroup } = require('./engine');
 const { appendLog } = require('./state');
 
+// Common guard: a live game, a real tile, a player still in it.
+function check(room, player, pos) {
+    if (!room.started || room.ended) return 'not-in-game';
+    if (player.bankrupt) return 'bankrupt';
+    if (!Number.isInteger(pos) || pos < 0 || pos >= room.board.tiles.length) return 'bad-tile';
+    if (tileSt(room, pos)?.owner !== player.userId) return 'not-owner';
+    return null;
+}
+// Spending money you owe on buildings or interest isn't allowed.
+function inDebt(room, player) {
+    return room.debts.some(d => d.userId === player.userId);
+}
+
 // ─── Mortgage ────────────────────────────────────────────────────────────────
 function mortgage(room, player, pos) {
+    const bad = check(room, player, pos);
+    if (bad) return { ok: false, error: bad };
     const def = tileDef(room, pos);
     const st  = tileSt(room, pos);
-    if (!st || st.owner !== player.userId) return { ok: false, error: 'not-owner' };
+    if (!['property', 'station', 'utility'].includes(def.type)) return { ok: false, error: 'not-mortgageable' };
     if (st.mortgaged) return { ok: false, error: 'already-mortgaged' };
     if (def.type === 'property' && st.houses > 0) return { ok: false, error: 'sell-buildings-first' };
     // Can't mortgage a property in a color group that has buildings on any of
@@ -28,9 +43,11 @@ function mortgage(room, player, pos) {
 }
 
 function unmortgage(room, player, pos) {
+    const bad = check(room, player, pos);
+    if (bad) return { ok: false, error: bad };
+    if (inDebt(room, player)) return { ok: false, error: 'pay-debt-first' };
     const def = tileDef(room, pos);
     const st  = tileSt(room, pos);
-    if (!st || st.owner !== player.userId) return { ok: false, error: 'not-owner' };
     if (!st.mortgaged) return { ok: false, error: 'not-mortgaged' };
     const cost = Math.ceil(def.mortgage * room.rules.mortgageRebuyRate);
     if (player.cash < cost) return { ok: false, error: 'insufficient', needed: cost };
@@ -73,9 +90,11 @@ function canSellEven(room, player, pos) {
 }
 
 function buildHouse(room, player, pos) {
+    const bad = check(room, player, pos);
+    if (bad) return { ok: false, error: bad };
+    if (inDebt(room, player)) return { ok: false, error: 'pay-debt-first' };
     const def = tileDef(room, pos);
     const st  = tileSt(room, pos);
-    if (!st || st.owner !== player.userId) return { ok: false, error: 'not-owner' };
     if (def.type !== 'property') return { ok: false, error: 'not-buildable' };
     if (st.mortgaged) return { ok: false, error: 'mortgaged' };
     if (st.houses >= 5) return { ok: false, error: 'max-built' };
@@ -111,31 +130,35 @@ function buildHouse(room, player, pos) {
         return r;
     }
     player.stats.housesBuilt += 1;
-    appendLog(room, { kind: 'build', userId: player.userId, pos, houses: st.houses });
+    appendLog(room, { kind: 'build', userId: player.userId, pos, houses: st.houses, amount: def.houseCost });
     return { ok: true, events: r.events.concat({ type: 'build', userId: player.userId, pos, houses: st.houses }) };
 }
 
 function sellHouse(room, player, pos) {
+    const bad = check(room, player, pos);
+    if (bad) return { ok: false, error: bad };
     const def = tileDef(room, pos);
     const st  = tileSt(room, pos);
-    if (!st || st.owner !== player.userId) return { ok: false, error: 'not-owner' };
     if (def.type !== 'property') return { ok: false, error: 'not-buildable' };
     if (st.houses <= 0) return { ok: false, error: 'no-houses' };
     if (!canSellEven(room, player, pos)) return { ok: false, error: 'uneven-sell' };
 
-    const refund = Math.floor(def.houseCost / 2);
+    let refund = Math.floor(def.houseCost / 2);
     if (st.houses === 5) {
-        // Demolishing a hotel needs 4 houses available in the bank to replace it.
-        if (room.bank.houses < 4) return { ok: false, error: 'no-houses-to-replace-hotel' };
+        // A hotel breaks down into 4 houses from the bank. In a housing
+        // shortage it breaks down to as many as the bank has, and the rest
+        // are sold too (so a player in debt can always liquidate).
+        const back = Math.min(4, room.bank.houses);
         room.bank.hotels += 1;
-        room.bank.houses -= 4;
-        st.houses = 4;
+        room.bank.houses -= back;
+        refund = Math.floor(def.houseCost / 2) * (5 - back);
+        st.houses = back;
     } else {
         room.bank.houses += 1;
         st.houses -= 1;
     }
     const r = transfer(room, 'bank', player.userId, refund, 'sell-house');
-    appendLog(room, { kind: 'sell-house', userId: player.userId, pos, houses: st.houses });
+    appendLog(room, { kind: 'sell-house', userId: player.userId, pos, houses: st.houses, amount: refund });
     return { ok: true, events: r.events.concat({ type: 'sell-house', userId: player.userId, pos, houses: st.houses }) };
 }
 

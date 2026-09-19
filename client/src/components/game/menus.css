@@ -1,0 +1,215 @@
+/* In-game menus: deeds, the auction block, the trade table, card draws. */
+
+/* ─── Title deed ─────────────────────────────────────────────────────────── */
+.deed { width: 100%; max-width: 300px; overflow: hidden; }
+.deed-band {
+    margin: 12px 12px 0;
+    padding: 10px 12px 12px;
+    text-align: center;
+    border-radius: 4px;
+    border: 1.5px solid rgba(0,0,0,0.3);
+}
+.deed-kicker { font-size: 11px; opacity: 0.85; }
+.deed-name { font-size: 30px; line-height: 0.95; overflow-wrap: anywhere; padding: 4px 0 2px; }
+.deed-plain { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 16px 6px; color: var(--ink); text-align: center; }
+.deed-body { padding: 10px 20px 18px; }
+.deed-rents { display: flex; flex-direction: column; }
+.deed-line {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 4px 6px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+.deed-line .mono { font-weight: 700; }
+.deed-line.on { background: var(--ink); color: var(--paper); }
+.deed-text { font-size: 14px; line-height: 1.5; margin: 6px 0; text-align: center; }
+.deed-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule); font-size: 12.5px; line-height: 1.55; color: var(--ink-2); text-align: center; }
+.deed.compact .deed-name { font-size: 22px; }
+.deed.compact .deed-body { padding: 8px 14px 14px; }
+.deed.compact .deed-line { font-size: 13px; padding: 3px 5px; }
+.deed.is-mortgaged .deed-band, .deed.is-mortgaged .deed-body { filter: grayscale(0.6); opacity: 0.8; }
+.deed-stamp {
+    position: absolute; left: 50%; top: 48%;
+    transform: translate(-50%, -50%) rotate(-14deg);
+    font-size: 34px; color: #b3261e;
+    border: 3px solid #b3261e; border-radius: 6px;
+    padding: 2px 12px;
+    opacity: 0.85;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+}
+
+/* ─── Menu shells ────────────────────────────────────────────────────────── */
+.sheet-close {
+    position: absolute; top: 10px; right: 10px; z-index: 3;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(0,0,0,0.55); color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.sheet-close:hover { background: rgba(0,0,0,0.8); }
+
+/* A felt tray for menus that hold many cards (trade, your deeds). */
+.tray {
+    border-radius: 16px;
+    border: 1px solid rgba(246,196,69,0.35);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 30px 60px -20px rgba(0,0,0,0.8);
+    color: var(--text);
+    display: flex; flex-direction: column;
+    max-height: calc(100dvh - 24px);
+    max-width: 100%;
+    overflow: hidden;
+}
+.tray-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(246,196,69,0.2);
+    min-width: 0;
+}
+.tray-title { font-size: 26px; color: var(--gold); margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tray-body { overflow-y: auto; padding: 16px 18px; min-height: 0; }
+.tray-foot {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(246,196,69,0.2);
+    background: rgba(0,0,0,0.2);
+}
+.tray-label {
+    font-family: var(--font-condensed); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; font-size: 13px; color: rgba(246, 236, 210, 0.72);
+    margin: 0 0 8px;
+}
+
+/* A deed as a small card you can hold in a hand (trade, your deeds). */
+.mini-deed {
+    display: flex; flex-direction: column;
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.35), 0 6px 14px -6px rgba(0,0,0,0.6);
+    border: 2px solid transparent;
+    transition: transform 0.15s var(--ease-out), border-color 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+}
+button.mini-deed:hover:not(:disabled) { transform: translateY(-2px); }
+.mini-deed.picked { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 0 0 2px rgba(246,196,69,0.35), 0 10px 18px -6px rgba(0,0,0,0.7); }
+.mini-deed:disabled { opacity: 0.5; cursor: not-allowed; }
+.mini-deed .mini-band { height: 12px; border-bottom: 1px solid rgba(0,0,0,0.25); }
+.mini-deed .mini-body { padding: 7px 9px 8px; min-width: 0; }
+.mini-deed .mini-name { font-family: var(--font-condensed); font-weight: 700; text-transform: uppercase; font-size: 16px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-deed .mini-meta { font-size: 12px; color: var(--ink-3); margin-top: 3px; display: flex; gap: 6px; align-items: center; }
+.mini-deed.mortgaged { background: var(--paper-3); }
+.hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+
+/* Money as a printed note chip. */
+.note {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #d9ecd0; color: #173a16;
+    border: 1px solid rgba(0,0,0,0.2);
+    font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .tray-title { font-size: 22px; }
+    .tray-body { padding: 14px; }
+    .hand { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
+
+.deed-owner {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 14px; color: rgba(246, 236, 210, 0.9);
+    min-width: 0; text-align: center;
+}
+.deed-actions { display: flex; flex-direction: column; gap: 8px; }
+.deed-actions .btn { justify-content: center; width: 100%; }
+.deed-hint { font-size: 13px; color: rgba(246, 236, 210, 0.75); text-align: center; line-height: 1.4; }
+
+/* ─── Auction ────────────────────────────────────────────────────────────── */
+.auction { display: flex; gap: 22px; align-items: center; max-width: 100%; }
+.auction-deed { width: 240px; flex: 0 0 auto; transform: rotate(-3deg); }
+.auction-card { width: 380px; max-width: 100%; overflow: hidden; }
+.auction-clock { font-size: 20px; font-weight: 700; padding: 2px 10px; border-radius: 6px; background: rgba(0,0,0,0.15); }
+.auction-clock.hot { background: #b3261e; color: #fff; }
+.auction-timer { height: 4px; background: rgba(29,25,17,0.12); }
+.auction-timer span { display: block; height: 100%; background: var(--ink); transform-origin: left center; transition: transform 0.1s linear; }
+.auction-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.auction-amount { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; }
+.auction-leader { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; min-width: 0; }
+.auction-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.auction-quick .btn { justify-content: center; font-family: var(--font-mono); font-weight: 700; }
+.auction-custom { display: flex; gap: 8px; margin-top: 10px; }
+.auction-custom .field { flex: 1; min-width: 0; }
+.auction-status { font-size: 13px; color: var(--ink-2); margin-top: 10px; min-height: 18px; }
+.auction-list { display: flex; justify-content: space-between; margin-top: 14px; padding: 8px 2px; border-top: 1px solid var(--rule); font-size: 14px; }
+.auction-who { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 14px; font-weight: 600; }
+.auction-who span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.auction-who span.out { opacity: 0.45; text-decoration: line-through; }
+@media (max-width: 720px) {
+    .auction-deed { display: none; }
+    .auction-amount { font-size: 36px; }
+}
+
+.tray-debt {
+    padding: 10px 18px;
+    font-size: 14px; line-height: 1.5;
+    background: rgba(179, 38, 30, 0.22);
+    border-bottom: 1px solid rgba(248, 113, 113, 0.35);
+    color: #fde2dd;
+}
+.mini-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mini-actions .btn.sm { font-size: 12px; padding: 5px 8px; }
+.mini-actions .btn.ink { font-size: 13px; letter-spacing: 0.04em; }
+
+/* ─── Trade table ────────────────────────────────────────────────────────── */
+.trade-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.trade-side { min-width: 0; }
+.trade-side + .trade-side { border-left: 1px dashed rgba(246,196,69,0.25); padding-left: 22px; }
+.trade-side-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; min-width: 0; }
+.trade-cash { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cash-slip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-weight: 700; font-size: 16px;
+    border-bottom: 2px solid var(--ink);
+}
+.cash-slip input {
+    width: 76px; border: none; background: transparent; padding: 6px 0;
+    font-family: var(--font-mono); font-weight: 700; font-size: 16px; color: var(--ink);
+}
+.cash-slip input:focus { outline: none; }
+.cash-slip:focus-within { border-bottom-color: var(--chance); }
+.trade-has { font-size: 13px; color: rgba(246,236,210,0.7); font-family: var(--font-mono); }
+.trade-thread { padding: 10px 18px; max-height: 120px; overflow-y: auto; font-size: 14px; line-height: 1.5; border-top: 1px solid rgba(246,196,69,0.2); color: rgba(246,236,210,0.9); }
+.trade-agree { display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 18px; font-size: 14px; color: rgba(246,236,210,0.75); border-top: 1px solid rgba(246,196,69,0.2); }
+.trade-agree .yes { color: var(--success); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.trade-msg { display: flex; gap: 8px; padding: 10px 18px; border-top: 1px solid rgba(246,196,69,0.2); }
+@media (max-width: 640px) {
+    .trade-sides { grid-template-columns: 1fr; }
+    .trade-side + .trade-side { border-left: none; padding-left: 0; border-top: 1px dashed rgba(246,196,69,0.25); padding-top: 16px; }
+}
+
+/* ─── Drawn Chance / Chest card ──────────────────────────────────────────── */
+.drawn-card { overflow: hidden; }
+.drawn-card.mine { width: 360px; max-width: calc(100vw - 24px); cursor: pointer; }
+.drawn-card.theirs { width: 320px; max-width: calc(100vw - 24px); }
+.drawn-text { margin: 0; padding: 18px 22px 20px; font-size: 18px; line-height: 1.45; font-weight: 600; text-align: center; text-wrap: balance; }
+.drawn-card.theirs .drawn-text { font-size: 15px; padding: 12px 16px 14px; }
+.drawn-hint { font-size: 12px; color: var(--ink-3); text-align: center; padding: 0 0 14px; }
+.drawn-toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 95; cursor: pointer; }
+
+/* ─── Victory ────────────────────────────────────────────────────────────── */
+.victory { width: 440px; max-width: 100%; overflow: hidden; text-align: center; }
+.victory-name { font-size: 50px; margin: 14px 24px 4px; line-height: 0.95; overflow-wrap: anywhere; text-wrap: balance; }
+.victory-lines { margin: 14px 24px 0; text-align: left; }
+.victory-lines > div { display: flex; justify-content: space-between; padding: 7px 2px; font-size: 15px; }
+.victory-lines b { font-size: 16px; }
+.victory-rank { text-align: left; margin: 18px 24px 0; border-top: 1.5px solid var(--ink); padding-top: 4px; }
+.victory-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; font-size: 15px; }
+.victory-row .place { width: 26px; font-family: var(--font-condensed); font-weight: 700; font-size: 18px; color: var(--ink-3); }
+.victory-row .who { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.victory-row .what { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }

@@ -1,178 +1,202 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
-import { Dice5, Users, Sparkles, PencilRuler } from 'lucide-react';
-import TokenPicker from './TokenPicker';
-import Logo from '../common/Logo';
+import { PencilRuler, ArrowRight, Users, HelpCircle, Package, ChevronDown } from 'lucide-react';
 import useIsMobile from '../../useIsMobile';
+import Logo from '../common/Logo';
+import Puck from '../common/Puck';
+import BoardList from '../common/BoardList';
+import './home.css';
 
+// The table before a game: two decks — start a game, join a game — and your
+// place card with the name and token you'll play as.
 export default function Home({ pushToast }) {
     const nav = useNavigate();
-    const isMobile = useIsMobile();
+    const nameRef = useRef(null);
     const [username, setUsername] = useState(() => localStorage.getItem('monopoly.username') || '');
     const [color, setColor] = useState(() => localStorage.getItem('monopoly.color') || '#EF4444');
     const [tokens, setTokens] = useState([]);
     const [boards, setBoards] = useState({ builtin: [], community: [] });
-    const [boardId, setBoardId] = useState('world-tour');
+    const [boardId, setBoardId] = useState(() => localStorage.getItem('monopoly.board') || 'world-tour');
     const [joinCode, setJoinCode] = useState('');
-    const [openRooms, setOpenRooms] = useState([]);
+    const [openRooms, setOpenRooms] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const isMobile = useIsMobile();
+    const [showBoards, setShowBoards] = useState(false);
 
     useEffect(() => { api.tokens().then(setTokens).catch(() => {}); }, []);
     useEffect(() => { api.listBoards().then(setBoards).catch(() => {}); }, []);
     useEffect(() => {
-        const t = setInterval(() => api.listRooms().then(setOpenRooms).catch(() => {}), 5000);
-        api.listRooms().then(setOpenRooms).catch(() => {});
+        const load = () => api.listRooms().then(setOpenRooms).catch(() => setOpenRooms([]));
+        load();
+        const t = setInterval(load, 5000);
         return () => clearInterval(t);
     }, []);
 
+    const allBoards = [...boards.builtin, ...(boards.community || []).map(b => ({ ...b, community: true }))];
+    const chosen = allBoards.find(b => b.id === boardId);
+    const initial = (username.trim()[0] || '?').toUpperCase();
+
     function persist() {
-        localStorage.setItem('monopoly.username', username);
+        localStorage.setItem('monopoly.username', username.trim());
         localStorage.setItem('monopoly.color', color);
+        localStorage.setItem('monopoly.board', boardId);
+    }
+    function needName() {
+        if (username.trim()) return false;
+        pushToast('Put your name on your place card first');
+        nameRef.current?.focus();
+        return true;
     }
 
     async function create() {
-        if (!username.trim()) return pushToast('Pick a name first', 'error');
+        if (needName() || busy) return;
         persist();
+        setBusy(true);
         try {
-            const { roomCode } = await api.createRoom({ username: username.trim(), color, boardId });
+            const body = chosen?.community
+                ? { username: username.trim(), color, customBoardId: boardId }
+                : { username: username.trim(), color, boardId: chosen ? boardId : 'world-tour' };
+            const { roomCode } = await api.createRoom(body);
             nav(`/r/${roomCode}`);
-        } catch (e) { pushToast(e.message || 'Failed to create'); }
+        } catch (e) {
+            pushToast(e.message === 'bad-username' ? 'That name has no usable characters' : (e.message || "Couldn't create the room"));
+        } finally { setBusy(false); }
     }
     async function join(code) {
         const trimmed = (code || joinCode).trim().toUpperCase();
-        if (!trimmed) return pushToast('Enter a code');
-        if (!username.trim()) return pushToast('Pick a name first');
+        if (needName()) return;
+        if (trimmed.length !== 6) return pushToast('Room codes are 6 letters and numbers');
         persist();
-        try { await api.getRoom(trimmed); } catch { return pushToast('Room not found'); }
+        try { await api.getRoom(trimmed); } catch { return pushToast(`No room called ${trimmed}`); }
         nav(`/r/${trimmed}`);
     }
 
     return (
-        <div className="grid-bg" style={{ flex: 1, overflowY: 'auto', minHeight: '100%' }}>
-            <div style={{ maxWidth: 1120, margin: '0 auto', padding: isMobile ? '24px 14px' : '48px 24px' }}>
-                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 24 : 48 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <Logo size={44} />
+        <div className="felt home" style={{ flex: 1, overflowY: 'auto' }}>
+            <div className="home-wrap">
+                <header className="home-head">
+                    <div className="wordmark">
+                        <Logo size={40} />
                         <div>
-                            <div className="display" style={{ fontSize: 26, letterSpacing: 0.3, color: 'var(--gold)', lineHeight: 1 }}>Monopoly</div>
-                            <div style={{ color: 'var(--text-3)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>ojee.net</div>
+                            <div className="print wordmark-text">Monopoly</div>
+                            <div className="wordmark-sub">Full rules, no accounts · ojee.net</div>
                         </div>
                     </div>
-                    <button className="btn ghost sm" onClick={() => nav('/editor')}>
-                        <PencilRuler size={14} /> Map editor
+                    <button className="btn sm ghost home-editor" onClick={() => nav('/editor')}>
+                        <PencilRuler size={14} /> <span>Map editor</span>
                     </button>
                 </header>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : 'minmax(320px, 1fr) minmax(280px, 420px)',
-                    gap: isMobile ? 16 : 32,
-                    alignItems: 'start',
-                }}>
-                    {/* ─── Create / join panel ─────────────────────────────────── */}
-                    <div className="card" style={{ padding: isMobile ? 20 : 32 }}>
-                        <div className="display" style={{ fontSize: 34, letterSpacing: 0.2, marginBottom: 4 }}>
-                            Roll the dice.
-                        </div>
-                        <div style={{ color: 'var(--text-3)', marginBottom: 28 }}>
-                            No accounts. Pick a name, pick a color, start a game.
-                        </div>
-
-                        <label style={labelStyle}>Your name</label>
-                        <input
-                            style={{ ...inputStyle, marginBottom: 16 }}
-                            placeholder="e.g. Ojee"
-                            value={username}
-                            onChange={e => setUsername(e.target.value.slice(0, 24))}
-                            onBlur={persist}
-                        />
-
-                        <label style={labelStyle}>Color</label>
-                        <TokenPicker tokens={tokens} value={color} onChange={setColor} />
-
-                        <label style={{ ...labelStyle, marginTop: 16 }}>Board</label>
-                        <select style={{ ...inputStyle, width: '100%' }} value={boardId} onChange={e => setBoardId(e.target.value)}>
-                            <optgroup label="Built-in">
-                                {boards.builtin.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </optgroup>
-                            {boards.community?.length > 0 && (
-                                <optgroup label="Community">
-                                    {boards.community.map(b => <option key={b.id} value={b.id}>{b.name} — {b.authorUsername}</option>)}
-                                </optgroup>
-                            )}
-                        </select>
-
-                        <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                            <button className="btn primary lg" onClick={create} style={{ flex: 1 }}>
-                                <Dice5 size={18} /> Create room
-                            </button>
-                        </div>
-
-                        <div style={{ height: 1, background: 'var(--border)', margin: '28px 0' }} />
-
-                        <label style={labelStyle}>Join with a code</label>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                {/* Place card: who you'll be at the table. */}
+                <section className="paper framed place-card dealt" aria-label="Your place card">
+                    <Puck color={color} label={initial} size={48} />
+                    <div className="place-body">
+                        <div>
+                            <label className="print-sm" htmlFor="home-name" style={{ color: 'var(--ink-3)' }}>Your name</label>
                             <input
-                                style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: 2 }}
-                                placeholder="XYZABC"
-                                maxLength={6}
-                                value={joinCode}
-                                onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                                onKeyDown={e => e.key === 'Enter' && join()}
+                                id="home-name"
+                                ref={nameRef}
+                                className="field"
+                                placeholder="Who's playing?"
+                                autoComplete="nickname"
+                                value={username}
+                                maxLength={24}
+                                onChange={e => setUsername(e.target.value.slice(0, 24))}
+                                onBlur={persist}
+                                onKeyDown={e => { if (e.key === 'Enter') create(); }}
                             />
-                            <button className="btn" onClick={() => join()}>Join</button>
+                        </div>
+                        <div>
+                            <div className="print-sm" style={{ color: 'var(--ink-3)' }}>Your token</div>
+                            <div className="puck-row" role="radiogroup" aria-label="Token colour">
+                                {tokens.map(t => (
+                                    <Puck key={t.id} color={t.hex} size={30} title={t.name}
+                                        selected={color === t.hex} onClick={() => setColor(t.hex)} />
+                                ))}
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    {/* ─── Open rooms + hints ──────────────────────────────────── */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div className="card">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <Users size={14} color="var(--text-3)" />
-                                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Open rooms</div>
+                <div className="decks">
+                    {/* Chance deck: start a game. */}
+                    <section className="deck dealt d2" aria-labelledby="start-title">
+                        <div className="deck-under" /><div className="deck-under" />
+                        <div className="paper framed deck-card">
+                            <div className="band chance">
+                                <HelpCircle size={30} strokeWidth={2.4} aria-hidden />
+                                <h2 id="start-title" className="print deck-title">Start a game</h2>
                             </div>
-                            {openRooms.length === 0 && (
-                                <div style={{ color: 'var(--text-3)', fontSize: 13 }}>Nothing public right now. Create one.</div>
-                            )}
-                            {openRooms.map(r => (
-                                <button key={r.roomCode} className="btn" style={{
-                                    width: '100%', justifyContent: 'space-between',
-                                    marginBottom: 6, padding: '10px 12px',
-                                }} onClick={() => join(r.roomCode)}>
-                                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.roomCode}</span>
-                                        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>
-                                            {r.host} · {r.boardName}
-                                        </span>
-                                    </span>
-                                    <span className="chip">{r.players}/8</span>
+                            <div className="deck-inner">
+                                <div className="print-sm deck-label">Pick a board</div>
+                                <BoardList
+                                    boards={isMobile && !showBoards ? allBoards.filter(b => b.id === (chosen ? boardId : 'world-tour')) : allBoards}
+                                    value={chosen ? boardId : 'world-tour'}
+                                    onChange={(id) => { setBoardId(id); if (isMobile) setShowBoards(false); }} />
+                                {isMobile && !showBoards && allBoards.length > 1 && (
+                                    <button className="btn sm paper-ghost" style={{ alignSelf: 'flex-start', marginTop: 6 }} onClick={() => setShowBoards(true)}>
+                                        <ChevronDown size={14} /> Other boards ({allBoards.length - 1})
+                                    </button>
+                                )}
+                                <button className="btn ink lg deck-action" onClick={create} disabled={busy}>
+                                    Create room <ArrowRight size={18} />
                                 </button>
-                            ))}
-                        </div>
-
-                        <div className="card" style={{ padding: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                <Sparkles size={14} color="var(--accent)" />
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>What's inside</div>
+                                <p className="deck-note">You'll get a link and a code to send everyone. House rules are set in the lobby.</p>
                             </div>
-                            <ul style={{ margin: 0, padding: '0 0 0 18px', color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7 }}>
-                                <li>Auctions, trades &amp; negotiations</li>
-                                <li>Mortgage, houses, hotels</li>
-                                <li>Custom boards &amp; rules</li>
-                                <li>Chat, live cursors, sound</li>
-                            </ul>
                         </div>
-                    </div>
+                    </section>
+
+                    {/* Chest deck: join a game. */}
+                    <section className="deck dealt d3" aria-labelledby="join-title">
+                        <div className="deck-under" /><div className="deck-under" />
+                        <div className="paper framed deck-card">
+                            <div className="band chest">
+                                <Package size={30} strokeWidth={2.2} aria-hidden />
+                                <h2 id="join-title" className="print deck-title">Join a game</h2>
+                            </div>
+                            <div className="deck-inner">
+                                <label className="print-sm deck-label" htmlFor="home-code">Room code</label>
+                                <div className="join-row">
+                                    <input
+                                        id="home-code"
+                                        className="field code"
+                                        placeholder="ABC123"
+                                        maxLength={6}
+                                        autoCapitalize="characters"
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        value={joinCode}
+                                        onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                        onKeyDown={e => e.key === 'Enter' && join()}
+                                    />
+                                    <button className="btn ink" onClick={() => join()} disabled={joinCode.length !== 6}>Join</button>
+                                </div>
+
+                                <div className="print-sm deck-label" style={{ marginTop: 22 }}>
+                                    <Users size={13} style={{ verticalAlign: '-2px', marginRight: 6 }} />Open tables
+                                </div>
+                                <div className="ruled open-tables">
+                                    {openRooms === null && <div className="empty-line">Looking for tables…</div>}
+                                    {openRooms?.length === 0 && (
+                                        <div className="empty-line">No open tables right now. Start one and send the link round.</div>
+                                    )}
+                                    {openRooms?.map(r => (
+                                        <button key={r.roomCode} className="table-row" onClick={() => join(r.roomCode)}>
+                                            <span className="mono table-code">{r.roomCode}</span>
+                                            <span className="table-meta">
+                                                <b>{r.host || 'Someone'}'s table</b>
+                                                <span>{r.boardName} · {r.players} of 8 seated</span>
+                                            </span>
+                                            <ArrowRight size={16} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
     );
 }
-
-const labelStyle = {
-    display: 'block',
-    fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-    textTransform: 'uppercase', color: 'var(--text-3)',
-    marginBottom: 6,
-};
-const inputStyle = { width: '100%', fontSize: 14 };

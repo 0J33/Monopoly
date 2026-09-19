@@ -5,7 +5,7 @@ import { play } from '../../sound';
 // Sliding chat overlay. Opens from the right edge with a semi-transparent
 // backdrop, stays out of the way until someone clicks the bubble button or
 // a new message arrives. Action log occupies its former spot now.
-export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose }) {
+export default function ChatPanel({ chat, sendChat, me, players = [], open, onOpen, onClose }) {
     const [text, setText] = useState('');
     const [unseen, setUnseen] = useState(0);
     const scrollRef = useRef(null);
@@ -18,7 +18,7 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
         lastSeenLen.current = chat.length;
         if (open) return;
         const fromOther = newMsgs.some(m => m.userId !== me?.userId && !m.system);
-        if (fromOther) { play('chat'); setUnseen(u => u + newMsgs.filter(m => m.userId !== me?.userId).length); }
+        if (fromOther) { play('chat'); setUnseen(u => u + newMsgs.filter(m => m.userId !== me?.userId && !m.system).length); }
     }, [chat, open, me?.userId]);
 
     useEffect(() => {
@@ -78,45 +78,46 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
                         background: 'rgba(0,0,0,0.35)',
                         animation: 'fadeIn 0.15s ease-out',
                     }} />
-                    <div className="slide-in-right" style={{
+                    <div className="slide-in-right felt" style={{
                         position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 75,
-                        width: 360, maxWidth: '90vw',
-                        background: 'var(--surface)',
-                        borderLeft: '1px solid var(--border)',
+                        width: 380, maxWidth: '92vw',
+                        borderLeft: '1px solid rgba(246,196,69,0.35)',
                         boxShadow: 'var(--shadow-lg)',
                         display: 'flex', flexDirection: 'column',
                     }}>
-                        <div style={{ padding: 14, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <MessageSquare size={14} color="var(--accent)" />
-                            <div style={{ fontWeight: 700, fontSize: 14 }}>Chat</div>
+                        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(246,196,69,0.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <MessageSquare size={18} color="var(--gold)" />
+                            <h2 className="print" style={{ margin: 0, fontSize: 26, color: 'var(--gold)' }}>Table talk</h2>
                             <div style={{ flex: 1 }} />
-                            <button className="btn sm ghost" onClick={onClose}><X size={14} /></button>
+                            <button className="btn sm ghost" onClick={onClose} aria-label="Close chat"><X size={15} /></button>
                         </div>
-                        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {chat.length === 0 && (
-                                <div style={{ color: 'var(--text-4)', fontSize: 12, textAlign: 'center', paddingTop: 16 }}>No messages yet.</div>
+                                <div style={{ color: 'rgba(246,236,210,0.6)', fontSize: 14, textAlign: 'center', paddingTop: 20 }}>Nothing said yet. Say hi.</div>
                             )}
                             {chat.map(m => (
                                 <div key={m.id} style={{
-                                    fontSize: 13, lineHeight: 1.4,
-                                    color: m.system ? 'var(--text-3)' : 'var(--text)',
+                                    fontSize: 14, lineHeight: 1.45,
+                                    color: m.system ? 'rgba(246,236,210,0.62)' : 'var(--text)',
                                     fontStyle: m.system ? 'italic' : 'normal',
+                                    overflowWrap: 'anywhere',
                                 }}>
                                     {!m.system && (
                                         <span style={{
-                                            fontWeight: 700, fontSize: 12,
-                                            color: m.userId === me?.userId ? 'var(--accent)' : 'var(--text-2)',
-                                        }}>{m.username}: </span>
+                                            fontWeight: 700,
+                                            color: players.find(p => p.userId === m.userId)?.color || 'var(--text-2)',
+                                        }}>{m.userId === me?.userId ? 'You' : m.username}: </span>
                                     )}
                                     <span>{m.text}</span>
                                 </div>
                             ))}
                         </div>
-                        <form onSubmit={submit} style={{ display: 'flex', gap: 6, padding: 10, borderTop: '1px solid var(--border)' }}>
+                        <form onSubmit={submit} style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid rgba(246,196,69,0.2)', background: 'rgba(0,0,0,0.2)' }}>
                             <input
                                 autoFocus
-                                style={{ flex: 1, fontSize: 13 }}
-                                placeholder="Say something…"
+                                style={{ flex: 1, fontSize: 15, minWidth: 0 }}
+                                aria-label="Message"
+                                placeholder="Say something to the table…"
                                 value={text}
                                 onChange={e => setText(e.target.value.slice(0, 500))}
                             />

@@ -1,24 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { tokenCenter, tileRect } from './layout';
+import { DICE_TOTAL_MS } from './Dice';
 
-// Stagger tokens that share a tile so they don't overlap. The offset axis
-// runs along the tile's long edge so tokens fan out ALONG the side of the
-// board rather than stacking through the tile's text area.
-function stackOffset(side, idx) {
-    const step = 12;
-    const offs = [0, step, -step, 2 * step, -2 * step, 3 * step, -3 * step];
-    const d = offs[idx] ?? 0;
+// Tokens sharing a tile fan out so none hides another. On a side tile they
+// spread across the tile's width inside the token strip; on a corner they
+// sit in a small grid. Offsets are in % of the board, so they scale with it.
+// Three or more on one tile also shrink a little so the row still fits.
+const SIDE_PCT = 8.22;      // matches layout.js
+function stackOffset(side, idx, count) {
+    if (count <= 1) return [0, 0];
+    if (side === 'corner') {
+        const cols = count <= 4 ? 2 : 3;
+        const rows = Math.ceil(count / cols);
+        const step = 3.4;
+        const col = idx % cols, row = Math.floor(idx / cols);
+        return [(col - (cols - 1) / 2) * step, (row - (rows - 1) / 2) * step];
+    }
+    const step = Math.min(3.2, (SIDE_PCT * 0.92) / count);
+    const d = (idx - (count - 1) / 2) * step;
     if (side === 'top' || side === 'bottom') return [d, 0];
-    if (side === 'left' || side === 'right') return [0, d];
-    return [d, 0];
+    return [0, d];
+}
+function stackScale(count) {
+    return count >= 4 ? 0.72 : count === 3 ? 0.85 : 1;
 }
 
 // Tile-by-tile walk. Watches incoming events for this player's `move` events
 // and steps the displayed position along the `path` so the token visibly
 // walks across each tile instead of teleporting.
-const STEP_MS = 160;
+export const STEP_MS = 160;
+// A token waits for the dice to settle before walking, and pauses on a
+// Chance / Chest square while the card is read.
+export const CARD_PAUSE_MS = 1400;
 
-export default function PlayerToken({ player, isActive, stackIndex, events, onHover }) {
+export default function PlayerToken({ player, isActive, stackIndex, stackCount = 1, events, onHover }) {
     const [displayPos, setDisplayPos] = useState(player.position);
     const [isJailShaking, setJailShaking] = useState(false);
     const [walking, setWalking] = useState(false);
@@ -29,13 +44,16 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
     // Feed new move events for this player into the queue.
     useEffect(() => {
         if (!events) return;
-        for (const e of events) {
-            if (e._k === lastSeenVersion.current) break;
-        }
         const idx = events.findIndex(e => e._k === lastSeenVersion.current);
         const newEvents = idx === -1 ? events : events.slice(idx + 1);
         if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
         for (const e of newEvents) {
+            if (e.type === 'roll' && e.userId === player.userId) {
+                queueRef.current.push({ kind: 'wait', ms: DICE_TOTAL_MS });
+            }
+            if (e.type === 'draw-card' && e.userId === player.userId) {
+                queueRef.current.push({ kind: 'wait', ms: CARD_PAUSE_MS });
+            }
             if (e.type === 'move' && e.userId === player.userId) {
                 queueRef.current.push({ kind: 'walk', path: e.path });
             }
@@ -83,6 +101,8 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
         } else if (next.kind === 'jail') {
             setJailShaking(true);
             setTimeout(() => { setJailShaking(false); runningRef.current = false; drain(); }, 600);
+        } else if (next.kind === 'wait') {
+            setTimeout(() => { runningRef.current = false; drain(); }, next.ms);
         } else if (next.kind === 'jail-escape') {
             // Small bounce before continuing.
             setTimeout(() => { runningRef.current = false; drain(); }, 300);
@@ -91,7 +111,9 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 
     const [xPct, yPct] = tokenCenter(displayPos);
     const side = tileRect(displayPos).side;
-    const off = stackOffset(side, stackIndex);
+    // While walking, a token is alone on each tile it passes.
+    const settled = !walking && displayPos === player.position;
+    const off = settled ? stackOffset(side, stackIndex, stackCount) : [0, 0];
     const initial = (player.username || '?').trim()[0]?.toUpperCase() || '?';
     const isLight = ['#FFFFFF', '#FACC15', '#FEF200'].includes(player.color?.toUpperCase());
 
@@ -99,8 +121,10 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
         <div
             className="token"
             style={{
-                left: `calc(${xPct}% + ${off[0]}px)`,
-                top:  `calc(${yPct}% + ${off[1]}px)`,
+                left: `${xPct + off[0]}%`,
+                top:  `${yPct + off[1]}%`,
+                '--token-scale': settled ? stackScale(stackCount) : 1,
+                zIndex: isActive ? 22 : 20,
             }}
             onMouseEnter={(e) => onHover?.(e, player)}
             onMouseLeave={() => onHover?.(null, null)}

@@ -7,6 +7,8 @@ import Game from './components/game/Game';
 import MapEditor from './components/editor/MapEditor';
 import Toasts from './components/common/Toasts';
 import { onError } from './socket';
+import useRoom from './useRoom';
+import { errorText } from './errors';
 import { installGlobalClickSound, play as playSound } from './sound';
 
 export default function App() {
@@ -22,7 +24,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        return onError((err) => { pushToast(err); playSound('error'); });
+        return onError((err) => { pushToast(errorText(err)); playSound('error'); });
     }, []);
 
     function pushToast(text, kind = 'error') {
@@ -53,10 +55,11 @@ export default function App() {
 }
 
 // Switches between Lobby (before game start) and Game (after) based on
-// room.started. Both mount the same socket connection.
+// room.started. One connection for both, so starting the game doesn't drop
+// and re-open the socket.
 function RoomRouter({ userId, pushToast }) {
-    const [phase, setPhase] = useState('lobby');
-    return phase === 'lobby'
-        ? <Lobby userId={userId} pushToast={pushToast} onStart={() => setPhase('game')} />
-        : <Game  userId={userId} pushToast={pushToast} onBackToLobby={() => setPhase('lobby')} />;
+    const roomState = useRoom({ userId, pushToast });
+    return roomState.room?.started
+        ? <Game  userId={userId} pushToast={pushToast} roomState={roomState} />
+        : <Lobby userId={userId} pushToast={pushToast} roomState={roomState} />;
 }

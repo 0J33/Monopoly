@@ -8,7 +8,7 @@ import PlayerHoverCard from './PlayerHoverCard';
 import ActionBar from './ActionBar';
 import './board.css';
 
-export default function Board({ room, userId, diceRolling, events, act, me, isMyTurn, onTileClick }) {
+export default function Board({ room, userId, diceRolling, events, act, me, isMyTurn, busy, onManage, onTileClick }) {
     const [hovered, setHovered] = useState(null);
     const [hoveredPlayer, setHoveredPlayer] = useState(null);
     const tiles = room?.board?.tiles || [];
@@ -24,6 +24,7 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                     def={t}
                     state={tileState[i]}
                     players={players}
+                    board={room?.board}
                     onClick={() => onTileClick?.(i)}
                     onHover={(e, def) => setHovered(def ? { def, state: tileState[i], e } : null)}
                 />
@@ -42,7 +43,7 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                         rolling={diceRolling}
                     />
                     {room?.lastDiceRoller && (
-                        <div style={{ fontSize: '1.1vmin', color: 'var(--text-3)' }}>
+                        <div className="rolled-by">
                             {players.find(p => p.userId === room.lastDiceRoller)?.username || '—'} rolled
                         </div>
                     )}
@@ -51,19 +52,21 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                         me={me}
                         isMyTurn={isMyTurn}
                         act={act}
+                        busy={busy}
+                        onManage={onManage}
                     />
                 </div>
             </div>
 
             {players.filter(p => !p.bankrupt).map((p) => {
-                const stackIdx = players.filter(x => !x.bankrupt && x.position === p.position)
-                    .findIndex(x => x.userId === p.userId);
+                const sharing = players.filter(x => !x.bankrupt && x.position === p.position);
                 return (
                     <PlayerToken
                         key={p.userId}
                         player={p}
                         isActive={active?.userId === p.userId && room?.started}
-                        stackIndex={stackIdx}
+                        stackIndex={sharing.findIndex(x => x.userId === p.userId)}
+                        stackCount={sharing.length}
                         events={events}
                         onHover={(e, pl) => setHoveredPlayer(pl ? { player: pl, e } : null)}
                     />

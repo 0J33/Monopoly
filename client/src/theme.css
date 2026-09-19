@@ -61,6 +61,7 @@
 
     --font-sans:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+    --font-condensed: 'Barlow Condensed', 'Arial Narrow', sans-serif;
     /* Fredoka — rounded, friendly, board-game display face for the wordmark,
        headings, banners and victory screen. This one font choice does most of
        the "feels like a game, not a dashboard" lifting. */
@@ -227,4 +228,24 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
       radial-gradient(1000px 560px at 118% 108%, rgba(31,178,90,0.12), transparent 62%),
       radial-gradient(700px 700px at 88% 4%, rgba(237,27,36,0.06), transparent 60%),
       var(--bg);
+}
+
+/* Shared modal shell: a dimmed backdrop and a panel that never exceeds the
+   screen (width is set per modal; max-width keeps phones safe). */
+.modal-backdrop {
+    position: fixed; inset: 0; z-index: 80;
+    background: rgba(0, 0, 0, 0.6);
+    display: grid; place-items: center;
+    padding: 12px;
+    animation: fadeIn 0.15s ease-out;
+}
+.modal-panel {
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex; flex-direction: column;
+    overflow: hidden;
 }

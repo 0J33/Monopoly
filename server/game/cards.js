@@ -13,19 +13,23 @@
 //   { kind: 'jailFree' }                                        consume / retain card
 //   { kind: 'repairs',      perHouse: N, perHotel: N }          pay per building
 
+// Card text is a template so it reads right on every board: `{tile:N}` is the
+// name of the tile at position N, `{station}` the board's word for a station
+// ("railroad", "airport"), `{Jail}` its word for jail, `{salary}` the room's GO salary. renderCardText()
+// fills them in. Destinations are the classic Monopoly squares.
 const CHANCE = [
-    { id: 'ch_advance_go',        text: 'Advance to GO. Collect $200.',                         effect: { kind: 'moveTo', pos: 0, passGo: true } },
-    { id: 'ch_advance_london',    text: 'Advance to London. If you pass GO, collect $200.',     effect: { kind: 'moveTo', pos: 37, passGo: true } },
-    { id: 'ch_advance_paris',     text: 'Advance to Paris. If you pass GO, collect $200.',      effect: { kind: 'moveTo', pos: 34, passGo: true } },
-    { id: 'ch_advance_barcelona', text: 'Advance to Barcelona. If you pass GO, collect $200.',  effect: { kind: 'moveTo', pos: 14, passGo: true } },
-    { id: 'ch_advance_istanbul',  text: 'Take a trip to Istanbul. Pass GO, collect $200.', effect: { kind: 'moveTo', pos: 5, passGo: true } },
-    { id: 'ch_nearest_station_1', text: 'Advance to the nearest station. If unowned, you may buy it. If owned, pay the owner double rent.', effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 } },
-    { id: 'ch_nearest_station_2', text: 'Advance to the nearest station. If unowned, you may buy it. If owned, pay the owner double rent.', effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 } },
-    { id: 'ch_nearest_util',      text: 'Advance to the nearest utility. If unowned, you may buy it. If owned, throw dice and pay 10× the amount rolled.', effect: { kind: 'moveToNearest', target: 'utility', rentMult: 10 } },
+    { id: 'ch_advance_go',        text: 'Advance to {tile:0}. Collect {salary}.',                          effect: { kind: 'moveTo', pos: 0, passGo: true } },
+    { id: 'ch_advance_39',        text: 'Advance to {tile:39}.',                                          effect: { kind: 'moveTo', pos: 39, passGo: true } },
+    { id: 'ch_advance_24',        text: 'Advance to {tile:24}. If you pass {tile:0}, collect {salary}.',  effect: { kind: 'moveTo', pos: 24, passGo: true } },
+    { id: 'ch_advance_11',        text: 'Advance to {tile:11}. If you pass {tile:0}, collect {salary}.',  effect: { kind: 'moveTo', pos: 11, passGo: true } },
+    { id: 'ch_trip_5',            text: 'Take a trip to {tile:5}. If you pass {tile:0}, collect {salary}.', effect: { kind: 'moveTo', pos: 5, passGo: true } },
+    { id: 'ch_nearest_station_1', text: 'Advance to the nearest {station}. If unowned, you may buy it. If owned, pay the owner twice the rent.', effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 } },
+    { id: 'ch_nearest_station_2', text: 'Advance to the nearest {station}. If unowned, you may buy it. If owned, pay the owner twice the rent.', effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 } },
+    { id: 'ch_nearest_util',      text: 'Advance to the nearest utility. If unowned, you may buy it. If owned, roll the dice and pay the owner 10× the roll.', effect: { kind: 'moveToNearest', target: 'utility', rentMult: 10 } },
     { id: 'ch_bank_dividend',     text: 'Bank pays you a dividend of $50.',                     effect: { kind: 'money', amount: 50 } },
-    { id: 'ch_jail_free',         text: 'Get Out of Jail Free. Keep until used or sold.',       effect: { kind: 'jailFree' } },
+    { id: 'ch_jail_free',         text: 'Get Out of {Jail} Free. Keep until used or sold.',       effect: { kind: 'jailFree' } },
     { id: 'ch_go_back_3',         text: 'Go back 3 spaces.',                                    effect: { kind: 'moveBy', delta: -3 } },
-    { id: 'ch_go_to_jail',        text: 'Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200.', effect: { kind: 'goToJail' } },
+    { id: 'ch_go_to_jail',        text: 'Go to {Jail}. Go directly to {Jail}. Do not pass {tile:0}, do not collect {salary}.', effect: { kind: 'goToJail' } },
     { id: 'ch_repairs',           text: 'Make general repairs on all your property: $25 per house, $100 per hotel.', effect: { kind: 'repairs', perHouse: 25, perHotel: 100 } },
     { id: 'ch_poor_tax',          text: 'Speeding fine. Pay $15.',                              effect: { kind: 'money', amount: -15 } },
     { id: 'ch_elected_chair',     text: 'You have been elected Chair of the Board. Pay each player $50.', effect: { kind: 'moneyAll', amount: -50 } },
@@ -33,12 +37,12 @@ const CHANCE = [
 ];
 
 const CHEST = [
-    { id: 'cc_advance_go',        text: 'Advance to GO. Collect $200.',                          effect: { kind: 'moveTo', pos: 0, passGo: true } },
+    { id: 'cc_advance_go',        text: 'Advance to {tile:0}. Collect {salary}.',                          effect: { kind: 'moveTo', pos: 0, passGo: true } },
     { id: 'cc_bank_error',        text: 'Bank error in your favor. Collect $200.',               effect: { kind: 'money', amount: 200 } },
     { id: 'cc_doctor_fee',        text: "Doctor's fee. Pay $50.",                                effect: { kind: 'money', amount: -50 } },
     { id: 'cc_stock_sale',        text: 'From sale of stock you get $50.',                       effect: { kind: 'money', amount: 50 } },
-    { id: 'cc_jail_free',         text: 'Get Out of Jail Free. Keep until used or sold.',        effect: { kind: 'jailFree' } },
-    { id: 'cc_go_to_jail',        text: 'Go to Jail. Do not pass GO, do not collect $200.',      effect: { kind: 'goToJail' } },
+    { id: 'cc_jail_free',         text: 'Get Out of {Jail} Free. Keep until used or sold.',        effect: { kind: 'jailFree' } },
+    { id: 'cc_go_to_jail',        text: 'Go to {Jail}. Do not pass {tile:0}, do not collect {salary}.',      effect: { kind: 'goToJail' } },
     { id: 'cc_holiday',           text: 'Holiday fund matures. Collect $100.',                   effect: { kind: 'money', amount: 100 } },
     { id: 'cc_income_tax_refund', text: 'Income tax refund. Collect $20.',                       effect: { kind: 'money', amount: 20 } },
     { id: 'cc_birthday',          text: 'It is your birthday. Collect $10 from every player.',   effect: { kind: 'moneyAll', amount: 10 } },
@@ -71,11 +75,21 @@ for (const c of CHEST)  BY_ID[c.id] = { ...c, deck: 'chest'  };
 
 function getCard(id) { return BY_ID[id] || null; }
 
+function renderCardText(card, room) {
+    const tiles = room?.board?.tiles || [];
+    return String(card?.text || '')
+        .replace(/\{tile:(\d+)\}/g, (_, n) => tiles[Number(n)]?.name || 'GO')
+        .replace(/\{station\}/g, room?.board?.stationNoun || 'station')
+        .replace(/\{Jail\}/g, room?.board?.jailNoun || 'Jail')
+        .replace(/\{salary\}/g, `$${room?.rules?.salary ?? 200}`);
+}
+
 module.exports = {
     CHANCE,
     CHEST,
     newChanceDeck,
     newChestDeck,
     getCard,
+    renderCardText,
     shuffled,
 };

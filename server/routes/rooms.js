@@ -4,14 +4,16 @@
 
 const express = require('express');
 const router = express.Router();
-const { createRoom, activeRooms, publicView, TOKEN_COLORS } = require('../game/state');
-const { BUILTIN_BOARDS, validateBoard } = require('../game/boards');
+const { createRoom, activeRooms, TOKEN_COLORS, sanitizeName } = require('../game/state');
+const { BUILTIN_BOARDS, GROUPS, validateBoard, computeGroupSizes } = require('../game/boards');
 const CustomBoard = require('../models/CustomBoard');
 
 // List all built-in + user's own boards + public community boards.
 router.get('/boards', async (req, res) => {
     const builtin = Object.values(BUILTIN_BOARDS).map(b => ({
-        id: b.id, name: b.name, builtin: true,
+        id: b.id, name: b.name, description: b.description || '', builtin: true,
+        // Cheapest and dearest streets — enough to recognise a board by.
+        preview: [b.tiles[1]?.name, b.tiles[39]?.name].filter(Boolean),
     }));
     let community = [];
     try {
@@ -61,21 +63,26 @@ router.post('/boards', async (req, res) => {
 router.post('/rooms', async (req, res) => {
     const { username, color, boardId = 'world-tour', customBoardId } = req.body || {};
     if (!username || !color) return res.status(400).json({ error: 'missing-fields' });
-    if (!/^[\w .\-]{1,24}$/.test(username)) return res.status(400).json({ error: 'bad-username' });
+    const name = sanitizeName(username, '');
+    if (!name) return res.status(400).json({ error: 'bad-username' });
     if (!TOKEN_COLORS.some(c => c.hex === color || c.id === color)) return res.status(400).json({ error: 'bad-color' });
 
     let customBoard = null;
     if (customBoardId) {
         try {
-            customBoard = await CustomBoard.findOne({ id: customBoardId }).lean();
-            if (!customBoard) return res.status(404).json({ error: 'board-not-found' });
-        } catch { /* ignore — fall back to default */ }
+            const cb = await CustomBoard.findOne({ id: customBoardId }).lean();
+            if (!cb) return res.status(404).json({ error: 'board-not-found' });
+            if (validateBoard(cb).length) return res.status(400).json({ error: 'invalid-board' });
+            customBoard = { ...cb, groupSizes: computeGroupSizes(cb.tiles), groupColors: cb.groupColors || GROUPS };
+        } catch { return res.status(500).json({ error: 'board-load-failed' }); }
+    } else if (!BUILTIN_BOARDS[boardId]) {
+        return res.status(400).json({ error: 'unknown-board' });
     }
 
     const hex = TOKEN_COLORS.find(c => c.hex === color || c.id === color).hex;
     const room = createRoom({
         hostUserId: req.userId,
-        hostUsername: username.trim(),
+        hostUsername: name,
         hostColor: hex,
         boardId,
         customBoard,

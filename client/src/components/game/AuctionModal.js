@@ -1,114 +1,117 @@
 import React, { useEffect, useState } from 'react';
 import { Gavel, X } from 'lucide-react';
+import Deed from './Deed';
+import Puck from '../common/Puck';
+import './menus.css';
 
+// The auction block: the deed up for sale beside the bidding card. The clock
+// resets on every bid; when it runs out the top bid wins.
 export default function AuctionModal({ room, me, act }) {
     const a = room.auction;
     const [bid, setBid] = useState(0);
-    const [secLeft, setSecLeft] = useState(8);
+    const [msLeft, setMsLeft] = useState(8000);
 
     useEffect(() => {
-        if (a) setBid(b => Math.max(b, a.currentBid + a.minIncrement));
+        if (a) setBid(b => Math.max(Number(b) || 0, a.currentBid + a.minIncrement));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [a?.currentBid]);
     useEffect(() => {
         if (!a) return;
-        const t = setInterval(() => {
-            setSecLeft(Math.max(0, Math.ceil((a.endsAt - Date.now()) / 1000)));
-        }, 200);
+        const tick = () => setMsLeft(Math.max(0, a.endsAt - Date.now()));
+        tick();
+        const t = setInterval(tick, 100);
         return () => clearInterval(t);
     }, [a]);
 
     if (!a || !me) return null;
 
     const def = room.board.tiles[a.pos];
+    const minBid    = a.currentBid + a.minIncrement;
     const inAuction = a.participants.includes(me.userId);
     const passed    = a.passed.includes(me.userId);
     const topBidder = a.currentBidder === me.userId;
-    const canBid    = inAuction && !passed && !topBidder && me.cash >= bid;
+    const validBid  = Number.isFinite(bid) && bid >= minBid;
+    const canBid    = inAuction && !passed && !topBidder && validBid && me.cash >= bid;
+    const bidding   = inAuction && !passed && !topBidder;
+    const quick = [minBid, minBid + 40, minBid + 90].filter(v => v <= me.cash);
+    const leader = room.players.find(p => p.userId === a.currentBidder);
+    const secs = Math.ceil(msLeft / 1000);
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 80,
-            background: 'rgba(0,0,0,0.65)',
-            display: 'grid', placeItems: 'center',
-            animation: 'fadeIn 0.15s ease-out',
-        }}>
-            <div className="fade-in" style={{
-                width: 460, background: 'var(--surface)',
-                border: '1px solid var(--border-2)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-lg)',
-                overflow: 'hidden',
-            }}>
-                <div style={{ background: def.color || 'var(--accent)', height: 6 }} />
-                <div style={{ padding: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <Gavel size={20} color="var(--warning)" />
-                        <div style={{ fontSize: 20, fontWeight: 800 }}>Auction: {def.name}</div>
-                        <div style={{ flex: 1 }} />
-                        <div className="chip mono" style={{
-                            color: secLeft < 3 ? 'var(--danger)' : 'var(--text-2)',
-                            fontSize: 13, fontWeight: 700,
-                        }}>{secLeft}s</div>
-                    </div>
+        <div className="modal-backdrop" style={{ zIndex: 80 }}>
+            <div className="auction dealt">
+                <div className="auction-deed"><Deed def={def} state={room.tileState[a.pos]} room={room} compact /></div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 20 }}>
-                        <div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>List price</div>
-                            <div className="mono" style={{ fontSize: 22, fontWeight: 700 }}>${def.price}</div>
+                <div className="paper framed auction-card">
+                    <div className="band chance" style={{ justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                            <Gavel size={24} style={{ flex: '0 0 auto' }} />
+                            <h2 className="print" style={{ fontSize: 30, margin: 0, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{def.name}</h2>
                         </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Top bid</div>
-                            <div className="money" style={{ fontSize: 22, fontWeight: 700 }}>
-                                ${a.currentBid || 0}
-                                {a.currentBidder && (
-                                    <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}>
-                                        by {room.players.find(p => p.userId === a.currentBidder)?.username}
+                        <div className={`auction-clock mono${secs <= 3 ? ' hot' : ''}`} aria-live="polite">{secs}s</div>
+                    </div>
+                    <div className="auction-timer"><span style={{ transform: `scaleX(${Math.min(1, msLeft / 8000)})` }} /></div>
+
+                    <div style={{ padding: '14px 20px 18px' }}>
+                        <div className="auction-top">
+                            <span className="mono auction-amount">${(a.currentBid || 0).toLocaleString()}</span>
+                            {leader
+                                ? <span className="auction-leader"><Puck color={leader.color} label={(leader.username[0] || '?').toUpperCase()} size={28} /> {leader.userId === me.userId ? 'You' : leader.username}</span>
+                                : <span className="auction-leader" style={{ color: 'var(--ink-3)' }}>No bids yet</span>}
+                        </div>
+
+                        {bidding && (
+                            <>
+                                <div className="auction-quick">
+                                    {quick.map(v => (
+                                        <button key={v} className="btn paper-ghost" onClick={() => act('auction-bid', { amount: v })}>${v}</button>
+                                    ))}
+                                </div>
+                                <div className="auction-custom">
+                                    <input
+                                        type="number" inputMode="numeric" aria-label="Your bid"
+                                        className="field" style={{ fontFamily: 'var(--font-mono)', textAlign: 'center' }}
+                                        min={minBid}
+                                        value={Number.isFinite(bid) ? bid : ''}
+                                        onChange={e => setBid(e.target.value === '' ? NaN : Math.floor(Number(e.target.value)))}
+                                        onKeyDown={e => { if (e.key === 'Enter' && canBid) act('auction-bid', { amount: bid }); }}
+                                    />
+                                    <button className="btn ink" disabled={!canBid} onClick={() => act('auction-bid', { amount: bid })}>
+                                        {validBid ? `Bid $${bid}` : `Min $${minBid}`}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="auction-status">
+                            {topBidder && <>You're the top bidder — it's yours if nobody beats it.</>}
+                            {!inAuction && <>You're watching this auction.</>}
+                            {passed && !topBidder && <>You passed.</>}
+                            {bidding && me.cash < minBid && <>You can't afford the next bid (you have ${me.cash.toLocaleString()}).</>}
+                        </div>
+
+                        {bidding && (
+                            <button className="btn paper-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }} onClick={() => act('auction-pass')}>
+                                <X size={14} /> Pass
+                            </button>
+                        )}
+
+                        <div className="auction-list">
+                            <span>List price</span><b className="mono">${def.price}</b>
+                        </div>
+
+                        <div className="auction-who">
+                            {a.participants.map(uid => {
+                                const p = room.players.find(x => x.userId === uid);
+                                if (!p) return null;
+                                const out = a.passed.includes(uid);
+                                return (
+                                    <span key={uid} className={out ? 'out' : ''} title={out ? `${p.username} passed` : p.username}>
+                                        <Puck color={p.color} label={(p.username[0] || '?').toUpperCase()} size={28} /> {p.username}
                                     </span>
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
-                    </div>
-
-                    {inAuction && !passed && !topBidder && (
-                        <div style={{ marginTop: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <button className="btn sm" onClick={() => setBid(b => Math.max(a.currentBid + a.minIncrement, b - 10))}>−10</button>
-                            <input
-                                type="number"
-                                style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, textAlign: 'center' }}
-                                min={a.currentBid + a.minIncrement}
-                                value={bid}
-                                onChange={e => setBid(Number(e.target.value))}
-                            />
-                            <button className="btn sm" onClick={() => setBid(b => b + 10)}>+10</button>
-                            <button className="btn sm" onClick={() => setBid(b => b + 50)}>+50</button>
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                        <button
-                            className="btn primary"
-                            style={{ flex: 1, justifyContent: 'center' }}
-                            disabled={!canBid}
-                            onClick={() => act('auction-bid', { amount: bid })}
-                        >Bid ${bid}</button>
-                        <button
-                            className="btn"
-                            disabled={!inAuction || passed}
-                            onClick={() => act('auction-pass')}
-                        ><X size={14} /> Pass</button>
-                    </div>
-
-                    <div style={{ marginTop: 18, fontSize: 12, color: 'var(--text-3)' }}>
-                        Participants: {a.participants.map(uid => {
-                            const p = room.players.find(x => x.userId === uid);
-                            const pass = a.passed.includes(uid);
-                            return p ? <span key={uid} style={{
-                                color: pass ? 'var(--text-4)' : p.color,
-                                textDecoration: pass ? 'line-through' : 'none',
-                                marginRight: 8, fontWeight: 600,
-                            }}>{p.username}</span> : null;
-                        })}
                     </div>
                 </div>
             </div>

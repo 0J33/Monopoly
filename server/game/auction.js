@@ -4,7 +4,7 @@
 // the player who declined. Auction ends when (a) a bid has stood for
 // `idleTimeoutMs`, or (b) everyone except the top bidder has passed.
 
-const { transfer, tileDef, tileSt } = require('./engine');
+const { transfer, tileDef, tileSt, postMovePhase } = require('./engine');
 const { appendLog } = require('./state');
 
 // How long a bid can stand before auction closes. Short enough to feel live,
@@ -37,7 +37,7 @@ function startAuction(room, pos) {
         history: [],                 // { userId, amount, ts }
     };
     room.turnPhase = 'auctioning';
-    appendLog(room, { kind: 'auction-start', pos, name: def.name });
+    appendLog(room, { kind: 'auction-start', pos, name: def.name, userId: room.players[room.turnIndex]?.userId });
     return { ok: true, events: [{ type: 'auction-start', pos, auction: room.auction }] };
 }
 
@@ -46,6 +46,9 @@ function placeBid(room, player, amount) {
     if (!a) return { ok: false, error: 'no-auction' };
     if (!a.participants.includes(player.userId)) return { ok: false, error: 'not-participant' };
     if (a.passed.includes(player.userId)) return { ok: false, error: 'already-passed' };
+    if (!Number.isFinite(amount)) return { ok: false, error: 'bad-amount' };
+    amount = Math.floor(amount);
+    if (a.currentBidder === player.userId) return { ok: false, error: 'already-top-bidder' };
     if (player.cash < amount) return { ok: false, error: 'insufficient' };
     const min = a.currentBid + a.minIncrement;
     if (amount < min) return { ok: false, error: 'below-min', min };
@@ -54,6 +57,10 @@ function placeBid(room, player, amount) {
     a.currentBidder = player.userId;
     a.endsAt = Date.now() + IDLE_TIMEOUT_MS;
     a.history.push({ userId: player.userId, amount, ts: Date.now() });
+    // Everyone else already passed → sold, no need to wait out the clock.
+    if (a.participants.every(u => u === player.userId || a.passed.includes(u))) {
+        return resolveAuction(room);
+    }
     return { ok: true, events: [{ type: 'auction-bid', userId: player.userId, amount }] };
 }
 
@@ -62,13 +69,48 @@ function pass(room, player) {
     if (!a) return { ok: false, error: 'no-auction' };
     if (!a.participants.includes(player.userId)) return { ok: false, error: 'not-participant' };
     if (a.passed.includes(player.userId)) return { ok: false, error: 'already-passed' };
+    if (a.currentBidder === player.userId) return { ok: false, error: 'top-bidder-cannot-pass' };
     a.passed.push(player.userId);
-    // Everyone except top bidder (or everyone if no bids) passed → resolve.
+    return maybeCloseAfterPass(room, [{ type: 'auction-pass', userId: player.userId }]);
+}
+
+// Everyone except the top bidder (or everyone, if no bids) has passed → close.
+function maybeCloseAfterPass(room, events) {
+    const a = room.auction;
     const remaining = a.participants.filter(u => !a.passed.includes(u));
     if (remaining.length === 0 || (remaining.length === 1 && remaining[0] === a.currentBidder)) {
-        return resolveAuction(room);
+        const r = resolveAuction(room);
+        return { ok: true, events: events.concat(r.events) };
     }
-    return { ok: true, events: [{ type: 'auction-pass', userId: player.userId }] };
+    return { ok: true, events };
+}
+
+// A player leaving the game mid-auction. If they held the top bid, it falls
+// back to the best earlier bid from someone still in.
+function removeFromAuction(room, userId) {
+    const a = room.auction;
+    if (!a || !a.participants.includes(userId)) return [];
+    a.participants = a.participants.filter(u => u !== userId);
+    a.passed = a.passed.filter(u => u !== userId);
+    if (a.currentBidder === userId) {
+        const fallback = bestStandingBid(room, a, userId);
+        a.currentBid = fallback?.amount || 0;
+        a.currentBidder = fallback?.userId || null;
+    }
+    if (a.participants.length === 0) return resolveAuction(room).events;
+    return maybeCloseAfterPass(room, []).events;
+}
+
+// The highest earlier bid by a player who is still in the game and can still
+// pay it.
+function bestStandingBid(room, a, excludeUserId) {
+    const bids = [...a.history].reverse();
+    for (const b of bids) {
+        if (b.userId === excludeUserId) continue;
+        const p = room.players.find(x => x.userId === b.userId);
+        if (p && !p.bankrupt && p.cash >= b.amount) return b;
+    }
+    return null;
 }
 
 // Timer-driven close (called by a socket-layer heartbeat every ~1s).
@@ -81,31 +123,47 @@ function maybeCloseOnTimeout(room) {
 
 function resolveAuction(room) {
     const a = room.auction;
-    if (!a) return { ok: false, error: 'no-auction' };
+    if (!a) return { ok: false, error: 'no-auction', events: [] };
     const events = [];
+    let winner = null, price = 0;
     if (a.currentBidder && a.currentBid > 0) {
-        const winner = room.players.find(p => p.userId === a.currentBidder);
-        if (winner && winner.cash >= a.currentBid) {
-            const r = transfer(room, winner.userId, 'bank', a.currentBid, 'auction-win');
-            events.push(...r.events);
-            const st = room.tileState[a.pos];
-            st.owner = winner.userId;
-            winner.owned.push(a.pos);
-            winner.stats.auctionWins += 1;
-            appendLog(room, { kind: 'auction-end', pos: a.pos, winnerId: winner.userId, price: a.currentBid });
-            events.push({ type: 'auction-end', pos: a.pos, winnerId: winner.userId, price: a.currentBid });
+        const top = room.players.find(p => p.userId === a.currentBidder);
+        if (top && !top.bankrupt && top.cash >= a.currentBid) {
+            winner = top; price = a.currentBid;
+        } else {
+            // The top bidder spent the money since bidding — the best earlier
+            // bid that can still be paid wins instead.
+            const fb = bestStandingBid(room, a, a.currentBidder);
+            if (fb) { winner = room.players.find(p => p.userId === fb.userId); price = fb.amount; }
+            appendLog(room, { kind: 'auction-void-bid', userId: a.currentBidder, amount: a.currentBid });
         }
+    }
+    if (winner) {
+        const r = transfer(room, winner.userId, 'bank', price, 'auction-win');
+        events.push(...r.events);
+        const st = room.tileState[a.pos];
+        st.owner = winner.userId;
+        winner.owned.push(a.pos);
+        winner.stats.auctionWins += 1;
+        winner.stats.propertiesBought += 1;
+        appendLog(room, { kind: 'auction-end', pos: a.pos, winnerId: winner.userId, price });
+        events.push({ type: 'auction-end', pos: a.pos, winnerId: winner.userId, price });
     } else {
         appendLog(room, { kind: 'auction-end', pos: a.pos, winnerId: null });
         events.push({ type: 'auction-end', pos: a.pos, winnerId: null });
     }
+    const endTurnAfter = a.endTurnAfter;
     room.auction = null;
-    // Restore the prior phase: if the player who landed still had a doubles
-    // chain, they keep rolling; otherwise they end their turn.
-    const active = room.players[room.turnIndex];
-    const isDouble = room.lastDice && room.lastDice[0] === room.lastDice[1];
-    room.turnPhase = (isDouble && !active.inJail) ? 'awaiting-roll' : 'awaiting-end-turn';
+    // The auction happened mid-turn: carry on with that turn (roll again on
+    // doubles, otherwise end it) — or, if the lander left the game meanwhile,
+    // hand the turn on.
+    if (endTurnAfter) {
+        const { advanceTurn } = require('./engine');
+        events.push(...advanceTurn(room));
+    } else {
+        room.turnPhase = postMovePhase(room, room.players[room.turnIndex]);
+    }
     return { ok: true, events };
 }
 
-module.exports = { startAuction, placeBid, pass, maybeCloseOnTimeout, resolveAuction, IDLE_TIMEOUT_MS };
+module.exports = { startAuction, placeBid, pass, removeFromAuction, maybeCloseOnTimeout, resolveAuction, IDLE_TIMEOUT_MS };

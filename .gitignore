@@ -54,3 +54,11 @@ dump/
 # tooling
 .turbo/
 .next/
+
+# impeccable design tooling: keep the product record and surface briefs,
+# not the review screenshots or decision scratch
+.impeccable/review/
+.impeccable/decision/
+.impeccable/mocks/
+.impeccable/build/
+.impeccable/questions/

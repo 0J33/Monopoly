@@ -16,6 +16,8 @@
         inset 0 0 60px rgba(0,0,0,0.55);
     user-select: none;
     overflow: hidden;
+    /* Tile names are sized in board widths (cqw). */
+    container-type: inline-size;
 }
 
 .tile {
@@ -35,25 +37,31 @@
 .tile.mortgaged { filter: grayscale(0.75) brightness(0.5); }
 
 .tile-name {
-    font-size: 0.95vmin;
+    /* Tile.js sizes this per tile so the longest word fits the tile's width. */
+    /* A condensed face, like the lettering on a printed board: long street
+       names fit the narrow tiles at a readable size. */
+    font-family: var(--font-condensed);
+    font-size: 1.2vmin;
     font-weight: 700;
-    line-height: 1.08;
+    line-height: 1.02;
     color: var(--text);
     text-transform: uppercase;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.02em;
     text-align: center;
-    padding: 0 2px;
+    padding: 0;
     max-width: 100%;
-    /* Allow multi-word names to break at spaces onto a second line; never
-       split inside a word. If even two lines aren't enough, ellipsis. */
+    /* Break at spaces, and hyphenate a word that still doesn't fit
+       ("PENNSYL-VANIA") — never chop a word at an arbitrary letter. Up to
+       three lines ("NORTH / CAROLINA / AVE"), then ellipsis. */
     white-space: normal;
-    word-break: keep-all;
-    overflow-wrap: break-word;
-    hyphens: none;
+    word-break: normal;
+    overflow-wrap: normal;
+    -webkit-hyphens: auto;
+    hyphens: auto;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -93,10 +101,11 @@
 /* Outer element owns ONLY position — the tile-to-tile glide happens here. */
 .token {
     position: absolute;
-    width: 2.6vmin;
-    height: 2.6vmin;
-    min-width: 22px;
-    min-height: 22px;
+    /* --token-scale < 1 when several tokens share a tile, so they fit. */
+    width: calc(2.6vmin * var(--token-scale, 1));
+    height: calc(2.6vmin * var(--token-scale, 1));
+    min-width: calc(16px * var(--token-scale, 1));
+    min-height: calc(16px * var(--token-scale, 1));
     z-index: 20;
     transform: translate(-50%, -50%);
     transition: left 0.15s ease-in-out, top 0.15s ease-in-out;
@@ -116,7 +125,7 @@
         inset 0 2px 3px rgba(255,255,255,0.45);
     display: grid;
     place-items: center;
-    font-size: 1.1vmin;
+    font-size: calc(1.1vmin * var(--token-scale, 1));
     font-weight: 800;
     pointer-events: auto;
     transition: box-shadow 0.2s ease;
@@ -453,6 +462,7 @@
     text-transform: uppercase;
     letter-spacing: 3px;
     font-size: 4.4vmin;
+    white-space: nowrap;
     z-index: 34;
     animation: bannerIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     pointer-events: none;
@@ -464,3 +474,56 @@
     75%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
 }
+
+.rolled-by {
+    font-size: 1.1vmin;
+    color: var(--text-3);
+    max-width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.action-status {
+    font-size: clamp(10px, 1.3vmin, 14px);
+    color: var(--text-3);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    min-height: 16px;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+}
+
+.log-name { font-weight: 700; overflow-wrap: anywhere; }
+.log-turn {
+    color: var(--text-3);
+    margin-top: 4px;
+    border-top: 1px dashed var(--border);
+    padding-top: 4px;
+}
+
+/* A payment you can't make yet: a printed bill on the table. */
+.board-center:has(.bill) .emblem { opacity: 0; transition: opacity 0.2s var(--ease); }
+.bill { width: 100%; max-width: 420px; overflow: hidden; }
+.bill-band {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: clamp(8px, 1.4vmin, 14px) clamp(12px, 2vmin, 20px);
+    background: #b3261e; color: #fff;
+    border-radius: 12px 12px 0 0;
+}
+.bill-band .print { font-size: clamp(18px, 2.6vmin, 30px); }
+.bill-amount { font-size: clamp(18px, 2.6vmin, 30px); font-weight: 800; }
+.bill-body { padding: clamp(10px, 1.6vmin, 16px) clamp(12px, 2vmin, 20px) clamp(12px, 1.8vmin, 18px); display: flex; flex-direction: column; gap: 10px; }
+.bill-text { margin: 0; font-size: clamp(12px, 1.45vmin, 15px); line-height: 1.45; text-align: center; }
+.bill-short {
+    text-align: center; font-size: clamp(12px, 1.35vmin, 14px); font-weight: 600;
+    color: var(--ink-2);
+    border: 1.5px dashed var(--ink-3); border-radius: 8px; padding: 8px;
+}
+.bill-row { display: flex; gap: 8px; }
+.bill-row .bill-btn { flex: 1; }
+.bill-btn { justify-content: center; }
+.bill-danger { color: #9b1c14; }
+.jail-note { font-size: clamp(11px, 1.3vmin, 14px); color: var(--text-2); text-align: center; line-height: 1.35; }

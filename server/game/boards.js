@@ -101,8 +101,11 @@ const WORLD_TOUR_TILES = [
 const WORLD_TOUR = Object.freeze({
     id: 'world-tour',
     name: 'World Tour',
+    description: 'Cities around the world',
     tiles: WORLD_TOUR_TILES,
     groupColors: GROUPS,
+    deckNames: { chance: 'Chance', chest: 'Community Chest' },
+    stationNoun: 'station',
     // Canonical size counts for group ownership / house distribution rules.
     groupSizes: computeGroupSizes(WORLD_TOUR_TILES),
 });
@@ -135,16 +138,30 @@ function validateBoard(board) {
 // ─── Additional built-in preset boards ──────────────────────────────────────
 // Same economic layout (rents/prices identical to WORLD_TOUR), just different
 // tile names + theming. Lets us ship multiple feels without balancing work.
-function renameBoard(source, id, name, names) {
+//
+// `names` renames any tile by position — streets, stations, utilities,
+// corners and the card squares alike. `extra` carries per-board labels:
+//   deckNames   what the two card decks are called ('Chance' / 'Community Chest')
+//   stationNoun what the card text calls a station ('railroad', 'airport')
+//   jailNoun    what it calls jail ('Prison' on richup)
+//   groupNames  optional label per colour group (richup names them by country)
+//   shortNames  what the tile face shows when the full name is too long for it
+function renameBoard(source, id, name, names, extra = {}) {
+    const shorts = extra.shortNames || {};
     const mapped = source.tiles.map(t => {
-        if (t.type !== 'property') return t;
-        return { ...t, name: names[t.pos] || t.name };
+        const out = names[t.pos] ? { ...t, name: names[t.pos] } : { ...t };
+        if (shorts[t.pos]) out.short = shorts[t.pos];
+        return out;
     });
+    delete extra.shortNames;
     return Object.freeze({
         id, name,
         tiles: mapped,
         groupColors: GROUPS,
         groupSizes: computeGroupSizes(mapped),
+        deckNames: { chance: 'Chance', chest: 'Community Chest' },
+        stationNoun: 'station',
+        ...extra,
     });
 }
 
@@ -158,7 +175,7 @@ const CLASSIC_USA = renameBoard(WORLD_TOUR, 'classic-usa', 'Classic USA', {
     26: 'Cleveland',       27: 'Pittsburgh',    29: 'Buffalo',
     31: 'Detroit',         32: 'Chicago',       34: 'St. Louis',
     37: 'Boston',          39: 'New York',
-});
+}, { description: 'American cities', shortNames: { 21: 'Phila\u00ADdelphia', 24: 'Washing\u00ADton', 27: 'Pitts\u00ADburgh' } });
 
 // World Capitals — cities that capital a country. Richup-adjacent feel.
 const WORLD_CAPITALS = renameBoard(WORLD_TOUR, 'world-capitals', 'World Capitals', {
@@ -170,12 +187,73 @@ const WORLD_CAPITALS = renameBoard(WORLD_TOUR, 'world-capitals', 'World Capitals
     26: 'Beijing',         27: 'Seoul',         29: 'Tokyo',
     31: 'Canberra',        32: 'Wellington',    34: 'Ottawa',
     37: 'Paris',           39: 'London',
+}, { description: 'Capital cities', shortNames: { 19: 'Copen\u00ADhagen', 32: 'Welling\u00ADton' } });
+
+// The original Monopoly board — Atlantic City streets, the four railroads.
+// Prices and rents in WORLD_TOUR are already the classic numbers, so only the
+// names change.
+const CLASSIC_MONOPOLY = renameBoard(WORLD_TOUR, 'classic-monopoly', 'Classic Monopoly', {
+    1:  'Mediterranean Avenue', 3:  'Baltic Avenue',
+    5:  'Reading Railroad',
+    6:  'Oriental Avenue',      8:  'Vermont Avenue',     9:  'Connecticut Avenue',
+    11: 'St. Charles Place',    12: 'Electric Company',   13: 'States Avenue',   14: 'Virginia Avenue',
+    15: 'Pennsylvania Railroad',
+    16: 'St. James Place',      18: 'Tennessee Avenue',   19: 'New York Avenue',
+    21: 'Kentucky Avenue',      23: 'Indiana Avenue',     24: 'Illinois Avenue',
+    25: 'B. & O. Railroad',
+    26: 'Atlantic Avenue',      27: 'Ventnor Avenue',     28: 'Water Works',     29: 'Marvin Gardens',
+    31: 'Pacific Avenue',       32: 'North Carolina Avenue', 34: 'Pennsylvania Avenue',
+    35: 'Short Line',
+    37: 'Park Place',           39: 'Boardwalk',
+}, {
+    stationNoun: 'railroad',
+    description: 'The original Atlantic City board',
+    shortNames: {
+        1: 'Mediter\u00ADranean Ave', 3: 'Baltic Ave', 5: 'Reading RR', 6: 'Oriental Ave', 8: 'Vermont Ave',
+        9: 'Connecti\u00ADcut Ave', 11: 'St. Charles Pl', 12: 'Electric Co', 13: 'States Ave', 14: 'Virginia Ave',
+        15: 'Penn. RR', 16: 'St. James Pl', 18: 'Tennes\u00ADsee Ave', 19: 'New York Ave', 21: 'Kentucky Ave',
+        23: 'Indiana Ave', 24: 'Illinois Ave', 25: 'B&O RR', 26: 'Atlantic Ave', 27: 'Ventnor Ave',
+        31: 'Pacific Ave', 32: 'N. Carolina Ave', 34: 'Pennsyl\u00ADvania Ave',
+    },
+});
+
+// richup.io's default map — countries as colour groups, four airports,
+// "Treasure" / "Surprise" decks, prison and vacation corners.
+const RICHUP_WORLD = renameBoard(WORLD_TOUR, 'richup-world', 'Richup World', {
+    0:  'Start',
+    1:  'Salvador',         2:  'Treasure',        3:  'Rio',
+    5:  'TLV Airport',
+    6:  'Tel Aviv',         7:  'Surprise',        8:  'Haifa',          9:  'Jerusalem',
+    10: 'In Prison / Just Visiting',
+    11: 'Venice',           12: 'Electric Company', 13: 'Milan',         14: 'Rome',
+    15: 'MUC Airport',
+    16: 'Frankfurt',        17: 'Treasure',        18: 'Munich',         19: 'Berlin',
+    20: 'Vacation',
+    21: 'Shenzhen',         22: 'Surprise',        23: 'Beijing',        24: 'Shanghai',
+    25: 'CDG Airport',
+    26: 'Lyon',             27: 'Toulouse',        28: 'Water Company',  29: 'Paris',
+    30: 'Go to Prison',
+    31: 'Liverpool',        32: 'Manchester',      33: 'Treasure',       34: 'London',
+    35: 'JFK Airport',
+    36: 'Surprise',         37: 'San Francisco',   39: 'New York',
+}, {
+    description: 'The richup.io default map',
+    deckNames: { chance: 'Surprise', chest: 'Treasure' },
+    stationNoun: 'airport',
+    jailNoun: 'Prison',
+    shortNames: { 10: 'In Prison', 12: 'Electric Co', 28: 'Water Co' },
+    groupNames: {
+        brown: 'Brazil', lblue: 'Israel', pink: 'Italy', orange: 'Germany',
+        red: 'China', yellow: 'France', green: 'United Kingdom', dblue: 'USA',
+    },
 });
 
 const BUILTIN_BOARDS = {
-    'world-tour':     WORLD_TOUR,
-    'classic-usa':    CLASSIC_USA,
-    'world-capitals': WORLD_CAPITALS,
+    'world-tour':       WORLD_TOUR,
+    'classic-monopoly': CLASSIC_MONOPOLY,
+    'richup-world':     RICHUP_WORLD,
+    'classic-usa':      CLASSIC_USA,
+    'world-capitals':   WORLD_CAPITALS,
 };
 
 module.exports = {

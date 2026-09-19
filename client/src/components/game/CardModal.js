@@ -1,47 +1,45 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { HelpCircle, Package } from 'lucide-react';
+import './menus.css';
 
-// Ephemeral card draw reveal. Shows for 3s unless clicked away.
-export default function CardModal({ deck, text, onClose }) {
+// Card draw reveal. Your own card takes the screen for a moment (click to
+// dismiss); someone else's slides in as a small card at the top that doesn't
+// block the board or your buttons.
+export default function CardModal({ deck, deckName, text, who, isMe, onClose }) {
+    // The parent re-renders constantly during play; keep one timer per card.
+    const close = useRef(onClose);
+    close.current = onClose;
     useEffect(() => {
-        const t = setTimeout(onClose, 3500);
+        const t = setTimeout(() => close.current(), isMe ? 4000 : 3500);
         return () => clearTimeout(t);
-    }, [onClose]);
+    }, [isMe]);
 
     const isChance = deck === 'chance';
     const Icon = isChance ? HelpCircle : Package;
+    const title = deckName || (isChance ? 'Chance' : 'Community Chest');
 
-    return (
-        <Overlay onClose={onClose}>
-            <div className="fade-in" style={{
-                width: 320, padding: 24, borderRadius: 'var(--radius-lg)',
-                background: 'var(--surface)', border: `2px solid ${isChance ? 'var(--warning)' : 'var(--accent-2)'}`,
-                boxShadow: 'var(--shadow-lg)',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                    <Icon size={22} color={isChance ? 'var(--warning)' : 'var(--accent-2)'} />
-                    <div style={{ fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                        {isChance ? 'Chance' : 'Community Chest'}
-                    </div>
-                </div>
-                <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text)', minHeight: 50 }}>
-                    {text}
-                </div>
-                <div style={{ marginTop: 14, fontSize: 11, color: 'var(--text-4)', textAlign: 'right' }}>click to dismiss</div>
+    const card = (
+        <div className={`paper framed drawn-card ${isMe ? 'mine dealt' : 'theirs slide-up'}`}>
+            <div className={`band ${isChance ? 'chance' : 'chest'}`}>
+                <Icon size={isMe ? 24 : 18} />
+                <h2 className="print" style={{ margin: 0, fontSize: isMe ? 30 : 22, minWidth: 0 }}>{title}</h2>
+                {who && !isMe && (
+                    <span className="print-sm" style={{ marginLeft: 'auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{who.username}</span>
+                )}
             </div>
-        </Overlay>
+            <p className="drawn-text">{text}</p>
+            {isMe && <div className="drawn-hint">Tap to put it away</div>}
+        </div>
     );
-}
 
-function Overlay({ children, onClose }) {
+    if (!isMe) {
+        return (
+            <div onClick={onClose} className="drawn-toast" role="status">{card}</div>
+        );
+    }
     return (
-        <div onClick={onClose} style={{
-            position: 'fixed', inset: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'grid', placeItems: 'center',
-            animation: 'fadeIn 0.15s ease-out',
-        }}>
-            <div onClick={e => e.stopPropagation()}>{children}</div>
+        <div onClick={onClose} className="modal-backdrop" style={{ zIndex: 100 }}>
+            <div onClick={e => { e.stopPropagation(); onClose(); }}>{card}</div>
         </div>
     );
 }

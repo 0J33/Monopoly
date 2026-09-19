@@ -43,11 +43,10 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
             )}
 
             {expanded && (
-                <div className="fade-in" style={{
+                <div className="fade-in felt" style={{
                     position: 'fixed', left: 16, bottom: 16, zIndex: 70,
-                    width: 340, maxWidth: '92vw',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border-2)',
+                    width: 360, maxWidth: '92vw',
+                    border: '1px solid rgba(246,196,69,0.35)',
                     borderRadius: 'var(--radius-lg)',
                     boxShadow: 'var(--shadow-lg)',
                     overflow: 'hidden',
@@ -57,8 +56,8 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
                         padding: '12px 14px',
                         borderBottom: '1px solid var(--border)',
                     }}>
-                        <Handshake size={14} color="var(--accent)" />
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>Open trades</div>
+                        <Handshake size={16} color="var(--gold)" />
+                        <h2 className="print" style={{ margin: 0, fontSize: 22, color: 'var(--gold)' }}>Open trades</h2>
                         <span className="chip" style={{ fontSize: 10 }}>{count}</span>
                         <div style={{ flex: 1 }} />
                         <button className="btn sm ghost" onClick={() => setExpanded(false)}><X size={13} /></button>
@@ -66,7 +65,7 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
                     <div style={{ maxHeight: 360, overflowY: 'auto', padding: 8 }}>
                         {open.length === 0 && (
                             <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-                                No open trades. Hover a player and click the trade icon to propose one.
+                                No open trades. Use the handshake next to a player to offer one.
                             </div>
                         )}
                         {open.map(t => (

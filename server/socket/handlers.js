@@ -3,11 +3,13 @@
 // the resulting delta + events to the whole room. We keep logic in
 // game/*.js so this file stays thin.
 
-const { v4: uuidv4 } = require('uuid');
 const {
-    activeRooms, getRoom, publicView, bumpVersion,
-    appendChat, appendLog, TOKEN_COLORS,
+    activeRooms, getRoom, deleteRoom, publicView, bumpVersion,
+    appendChat, appendLog, TOKEN_COLORS, createPlayerState,
+    sanitizeName, uniqueName,
 } = require('../game/state');
+const { BUILTIN_BOARDS, computeGroupSizes } = require('../game/boards');
+const { COOKIE } = require('../middleware/session');
 const engine = require('../game/engine');
 const property = require('../game/property');
 const auction = require('../game/auction');
@@ -16,6 +18,14 @@ const GameRoom = require('../models/GameRoom');
 
 const SAVE_INTERVAL = 30000;
 const saveTimers = new Map();
+// A lobby seat is freed this long after its player disconnects.
+const LOBBY_LEAVE_MS = 30000;
+// Mid-game, anyone can remove a player who has been offline this long, so
+// one closed tab can't stall the game forever.
+const OFFLINE_REMOVE_MS = 60000;
+// Rooms nobody is connected to are dropped after this long.
+const IDLE_ROOM_MS = 6 * 60 * 60 * 1000;
+const ENDED_ROOM_MS = 60 * 60 * 1000;
 
 function startAutoSave(roomCode) {
     if (saveTimers.has(roomCode)) return;
@@ -54,54 +64,80 @@ function sysChat(io, room, text) {
     io.to(room.roomCode).emit('chat', msg);
 }
 
-// Per-socket auth payload sent by client on connect: { userId, roomCode, username, color }.
-// We trust userId because it comes from an httpOnly cookie the HTTP layer set.
+// Who is this socket? The userId comes from the httpOnly `monopoly_uid`
+// cookie the HTTP layer set — the browser sends it with the socket.io
+// handshake (same origin). Never from the client-supplied auth payload:
+// every player's userId is in the public room state, so trusting that would
+// let anyone act as anyone.
+function cookieUserId(socket) {
+    const header = socket.handshake.headers?.cookie || '';
+    for (const part of header.split(';')) {
+        const i = part.indexOf('=');
+        if (i === -1 || part.slice(0, i).trim() !== COOKIE) continue;
+        try { return decodeURIComponent(part.slice(i + 1).trim()); } catch { return null; }
+    }
+    return null;
+}
+
 function identify(socket) {
-    const auth = socket.handshake.auth || {};
-    const { userId, roomCode } = auth;
-    if (!userId || !roomCode) return null;
+    const userId = cookieUserId(socket);
+    const roomCode = socket.handshake.auth?.roomCode;
+    if (!userId || userId.length < 8 || !roomCode) return null;
     const room = getRoom(String(roomCode).toUpperCase());
     if (!room) return null;
     return { room, userId };
 }
 
+// Is any other socket of this user still in the room? (Two tabs, or a
+// reconnect racing the old socket's disconnect.)
+function userStillConnected(io, room, userId, exceptSocketId) {
+    for (const s of io.of('/').sockets.values()) {
+        if (s.id !== exceptSocketId && s.data.roomCode === room.roomCode && s.data.userId === userId) return true;
+    }
+    return false;
+}
+
 function onJoin(io, socket, payload) {
     const ident = identify(socket);
-    if (!ident) return socket.emit('error-msg', 'invalid-session');
+    if (!ident) return socket.emit('error-msg', 'room-not-found');
     const { room, userId } = ident;
     const { username, color, asSpectator } = payload || {};
 
     socket.join(room.roomCode);
     socket.data.roomCode = room.roomCode;
     socket.data.userId = userId;
+    socket.emit('chat-history', room.chat);
 
     const existing = room.players.find(p => p.userId === userId);
     if (existing) {
+        const wasOffline = !existing.connected;
         existing.socketId = socket.id;
         existing.connected = true;
-        if (username) existing.username = String(username).slice(0, 24);
+        existing.disconnectedAt = null;
+        if (!room.started && username) existing.username = uniqueName(room, sanitizeName(username, existing.username), userId);
+        if (wasOffline && existing.announcedOffline && room.started && !existing.bankrupt) sysChat(io, room, `${existing.username} is back`);
+        existing.announcedOffline = false;
         return broadcast(io, room, [{ type: 'player-reconnect', userId }]);
     }
-    if (asSpectator || room.started) {
+    if (asSpectator || room.started || room.players.length >= 8) {
+        if (!asSpectator && !room.started) socket.emit('error-msg', 'room-full');
         const spec = room.spectators.find(s => s.userId === userId);
         if (spec) { spec.socketId = socket.id; }
         else {
-            room.spectators.push({ userId, username: (username || 'Spectator').slice(0, 24), socketId: socket.id });
+            room.spectators.push({ userId, username: sanitizeName(username, 'Spectator'), socketId: socket.id });
         }
         return broadcast(io, room, [{ type: 'spectator-join', userId }]);
     }
-    if (room.players.length >= 8) return socket.emit('error-msg', 'room-full');
 
     // Color conflict → auto-pick next free color.
-    let hex = color || TOKEN_COLORS[room.players.length].hex;
+    let hex = TOKEN_COLORS.find(c => c.hex === color || c.id === color)?.hex || TOKEN_COLORS[room.players.length % TOKEN_COLORS.length].hex;
     if (room.players.some(p => p.color === hex)) {
         const free = TOKEN_COLORS.find(c => !room.players.some(p => p.color === c.hex));
         hex = free?.hex || TOKEN_COLORS[0].hex;
     }
-    const { createPlayerState } = require('../game/state');
     const p = createPlayerState({
         userId,
-        username: (username || 'Player').slice(0, 24),
+        username: uniqueName(room, sanitizeName(username)),
         color: hex,
         seat: room.players.length,
         isHost: false,
@@ -117,8 +153,57 @@ function requirePlayer(room, userId) {
     return room.players.find(p => p.userId === userId && !p.bankrupt) || null;
 }
 function requireActive(room, userId) {
+    if (!room || !room.started || room.ended) return null;
     const active = room.players[room.turnIndex];
-    return active && active.userId === userId ? active : null;
+    return active && active.userId === userId && !active.bankrupt ? active : null;
+}
+
+// Lobby only: take a player out of the room entirely and keep the seats and
+// host role consistent.
+function removeFromLobby(io, room, userId, text) {
+    const idx = room.players.findIndex(p => p.userId === userId);
+    if (idx === -1) return;
+    const [removed] = room.players.splice(idx, 1);
+    room.players.forEach((p, i) => { p.seat = i; });
+    if (room.players.length === 0) {
+        stopAutoSave(room.roomCode);
+        deleteRoom(room.roomCode);
+        return;
+    }
+    if (removed.userId === room.hostUserId) {
+        const next = room.players.find(p => p.connected) || room.players[0];
+        room.hostUserId = next.userId;
+        room.players.forEach(p => { p.isHost = p.userId === next.userId; });
+        sysChat(io, room, `${removed.username} left — ${next.username} is the host now`);
+    } else {
+        sysChat(io, room, text || `${removed.username} left`);
+    }
+    broadcast(io, room, [{ type: 'player-leave', userId }]);
+}
+
+// Rules the host can change, with the range each may take. Anything outside
+// is clamped; anything of the wrong type is ignored.
+const RULES = {
+    startingCash:        { type: 'int',  min: 0,   max: 100000 },
+    salary:              { type: 'int',  min: 0,   max: 10000 },
+    doubleOnGo:          { type: 'bool' },
+    freeParkingPot:      { type: 'bool' },
+    auctionUnbought:     { type: 'bool' },
+    noRentInJail:        { type: 'bool' },
+    evenBuild:           { type: 'bool' },
+    mortgageRebuyRate:   { type: 'num',  min: 1,   max: 2 },
+    jailFine:            { type: 'int',  min: 0,   max: 5000 },
+    jailTurnsMax:        { type: 'int',  min: 1,   max: 10 },
+    xDoubles:            { type: 'int',  min: 2,   max: 10 },
+    allowDevOnMortgaged: { type: 'bool' },
+    randomTurnOrder:     { type: 'bool' },
+};
+function coerceRule(spec, v) {
+    if (spec.type === 'bool') return typeof v === 'boolean' ? v : undefined;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return undefined;
+    const x = spec.type === 'int' ? Math.round(n) : n;
+    return Math.min(spec.max, Math.max(spec.min, x));
 }
 
 // ─── Dispatch table ──────────────────────────────────────────────────────────
@@ -129,7 +214,14 @@ const handlers = {
         const p = room.players.find(pl => pl.userId === socket.data.userId)
                || room.spectators.find(s => s.userId === socket.data.userId);
         if (!p) return;
-        const msg = appendChat(room, { userId: p.userId, username: p.username, text });
+        const clean = String(text ?? '').trim();
+        if (!clean) return;
+        // Gentle flood control: at most 6 messages per 5 seconds per socket.
+        const now = Date.now();
+        socket.data.chatTimes = (socket.data.chatTimes || []).filter(t => now - t < 5000);
+        if (socket.data.chatTimes.length >= 6) return socket.emit('error-msg', 'slow-down');
+        socket.data.chatTimes.push(now);
+        const msg = appendChat(room, { userId: p.userId, username: p.username, text: clean });
         io.to(room.roomCode).emit('chat', msg);
     },
 
@@ -145,24 +237,44 @@ const handlers = {
         broadcast(io, room, [{ type: 'player-color', userId: p.userId }]);
     },
 
+    // Names are fixed once the game starts — the log and trades refer to them.
     'set-username': (io, socket, { username }) => {
         const room = getRoom(socket.data.roomCode);
-        if (!room) return;
+        if (!room || room.started) return;
         const p = room.players.find(pl => pl.userId === socket.data.userId)
                || room.spectators.find(s => s.userId === socket.data.userId);
         if (!p) return;
-        p.username = String(username).slice(0, 24);
+        const next = uniqueName(room, sanitizeName(username, p.username), p.userId);
+        if (next === p.username) return;
+        p.username = next;
         broadcast(io, room, [{ type: 'player-rename', userId: p.userId }]);
+    },
+
+    'set-board': (io, socket, { boardId }) => {
+        const room = getRoom(socket.data.roomCode);
+        if (!room || room.started) return;
+        if (socket.data.userId !== room.hostUserId) return socket.emit('error-msg', 'not-host');
+        const b = BUILTIN_BOARDS[boardId];
+        if (!b) return socket.emit('error-msg', 'unknown-board');
+        room.board = {
+            id: b.id, name: b.name, tiles: b.tiles, groupColors: b.groupColors,
+            groupSizes: b.groupSizes || computeGroupSizes(b.tiles),
+            deckNames: b.deckNames, stationNoun: b.stationNoun, jailNoun: b.jailNoun || 'Jail',
+            groupNames: b.groupNames || null,
+        };
+        sysChat(io, room, `Board changed to ${b.name}`);
+        broadcast(io, room, [{ type: 'board-changed' }]);
     },
 
     'update-rules': (io, socket, { rules }) => {
         const room = getRoom(socket.data.roomCode);
         if (!room || room.started) return;
         if (socket.data.userId !== room.hostUserId) return socket.emit('error-msg', 'not-host');
-        const allow = ['startingCash', 'salary', 'doubleOnGo', 'freeParkingPot', 'auctionUnbought',
-                       'noRentInJail', 'evenBuild', 'mortgageRebuyRate', 'jailFine', 'jailTurnsMax',
-                       'xDoubles', 'turnClockSeconds', 'allowDevOnMortgaged', 'randomTurnOrder'];
-        for (const k of allow) if (k in (rules || {})) room.rules[k] = rules[k];
+        for (const [k, spec] of Object.entries(RULES)) {
+            if (!(k in (rules || {}))) continue;
+            const v = coerceRule(spec, rules[k]);
+            if (v !== undefined) room.rules[k] = v;
+        }
         // Refund/charge starting cash adjustments before game starts so players
         // see the current number in lobby.
         for (const p of room.players) p.cash = room.rules.startingCash;
@@ -174,13 +286,16 @@ const handlers = {
         if (!room || room.started) return;
         if (socket.data.userId !== room.hostUserId) return;
         if (userId === room.hostUserId) return;
-        const idx = room.players.findIndex(p => p.userId === userId);
-        if (idx === -1) return;
-        const [removed] = room.players.splice(idx, 1);
-        // Reindex seats.
-        room.players.forEach((p, i) => p.seat = i);
-        sysChat(io, room, `${removed.username} was removed by host`);
-        broadcast(io, room, [{ type: 'player-kick', userId }]);
+        const target = room.players.find(p => p.userId === userId);
+        if (!target) return;
+        for (const s of io.of('/').sockets.values()) {
+            if (s.data.roomCode === room.roomCode && s.data.userId === userId) {
+                s.emit('kicked');
+                s.leave(room.roomCode);
+                s.data.roomCode = null;
+            }
+        }
+        removeFromLobby(io, room, userId, `${target.username} was removed by the host`);
     },
 
     'start-game': (io, socket) => {
@@ -201,6 +316,8 @@ const handlers = {
         room.turnIndex = 0;
         room.turnPhase = 'awaiting-roll';
         room.turnStartedAt = Date.now();
+        room.turnNumber = 1;
+        for (const p of room.players) p.cash = room.rules.startingCash;
         appendLog(room, { kind: 'game-start' });
         // First turn-start doesn't come through endTurn, so log it here.
         appendLog(room, { kind: 'turn-start', userId: room.players[0].userId });
@@ -214,6 +331,10 @@ const handlers = {
         if (!room) return;
         const p = requireActive(room, socket.data.userId);
         if (!p) return socket.emit('error-msg', 'not-your-turn');
+        // A double-click shouldn't cost anyone a second roll.
+        const now = Date.now();
+        if (socket.data.lastRollAt && now - socket.data.lastRollAt < 400) return;
+        socket.data.lastRollAt = now;
         const r = engine.rollAndMove(room, p);
         if (!r.ok) return socket.emit('error-msg', r.error);
         broadcast(io, room, r.events);
@@ -252,7 +373,7 @@ const handlers = {
     'jail-pay':  (io, socket) => {
         const room = getRoom(socket.data.roomCode);
         const p = requireActive(room, socket.data.userId);
-        if (!room || !p) return;
+        if (!p) return;
         const r = engine.payJailFine(room, p);
         if (!r.ok) return socket.emit('error-msg', r.error);
         broadcast(io, room, r.events);
@@ -260,7 +381,7 @@ const handlers = {
     'jail-card': (io, socket) => {
         const room = getRoom(socket.data.roomCode);
         const p = requireActive(room, socket.data.userId);
-        if (!room || !p) return;
+        if (!p) return;
         const r = engine.useJailCard(room, p);
         if (!r.ok) return socket.emit('error-msg', r.error);
         broadcast(io, room, r.events);
@@ -336,16 +457,65 @@ const handlers = {
         broadcast(io, room, r.events);
     },
 
-    'bankrupt': (io, socket, { creditorUserId }) => {
+    // Pay the debt you're in (rent, tax, card, jail fine you couldn't cover).
+    'pay-debt': (io, socket) => {
+        const room = getRoom(socket.data.roomCode);
+        if (!room) return;
+        const p = requirePlayer(room, socket.data.userId);
+        if (!p) return;
+        const r = engine.payDebt(room, p);
+        if (!r.ok) return socket.emit('error-msg', r.error);
+        broadcast(io, room, r.events);
+    },
+
+    // Go bankrupt. With a debt: assets go to whoever it's owed to. Without
+    // one it's resigning: assets go back to the bank. Either way the game
+    // carries on without them. The creditor comes from the debt on record,
+    // never from the client.
+    'bankrupt': (io, socket) => {
         const room = getRoom(socket.data.roomCode);
         if (!room) return;
         const p = room.players.find(pl => pl.userId === socket.data.userId);
         if (!p) return;
-        const r = engine.declareBankruptcy(room, p, creditorUserId || null);
+        const inDebt = room.debts.some(d => d.userId === p.userId);
+        const r = engine.declareBankruptcy(room, p, { resigned: !inDebt });
         if (!r.ok) return socket.emit('error-msg', r.error);
+        sysChat(io, room, inDebt ? `${p.username} went bankrupt` : `${p.username} resigned`);
+        afterGameChange(io, room);
+        broadcast(io, room, r.events);
+    },
+
+    // Remove a player who has been offline for a while (closed the tab, lost
+    // signal) so the game isn't stuck waiting on them. Their assets go to the
+    // bank, exactly as if they'd resigned.
+    'remove-player': (io, socket, { userId }) => {
+        const room = getRoom(socket.data.roomCode);
+        if (!room || !room.started || room.ended) return;
+        const me = requirePlayer(room, socket.data.userId);
+        if (!me) return;
+        const target = room.players.find(p => p.userId === userId);
+        if (!target || target.bankrupt || target.userId === me.userId) return;
+        if (target.connected || !target.disconnectedAt || Date.now() - target.disconnectedAt < OFFLINE_REMOVE_MS) {
+            return socket.emit('error-msg', 'player-not-idle');
+        }
+        const r = engine.declareBankruptcy(room, target, { resigned: true });
+        if (!r.ok) return socket.emit('error-msg', r.error);
+        sysChat(io, room, `${target.username} was removed after going offline (by ${me.username})`);
+        afterGameChange(io, room);
         broadcast(io, room, r.events);
     },
 };
+
+// Game-over housekeeping shared by the handlers that can end a game.
+function afterGameChange(io, room) {
+    if (room.ended) {
+        const w = room.players.find(p => p.userId === room.winnerUserId);
+        if (w && !room.announcedWinner) {
+            room.announcedWinner = true;
+            sysChat(io, room, `${w.username} wins the game!`);
+        }
+    }
+}
 
 function doPropAction(io, socket, getFn, pos) {
     const room = getRoom(socket.data.roomCode);
@@ -354,6 +524,7 @@ function doPropAction(io, socket, getFn, pos) {
     if (!p) return;
     const action = getFn(p);
     const r = action(room, p, Number(pos));
+    if (r.ok) afterGameChange(io, room);
     if (!r.ok) return socket.emit('error-msg', r.error);
     broadcast(io, room, r.events);
 }
@@ -362,10 +533,19 @@ function registerSocketHandlers(io) {
     // Heartbeat for auction timers. Runs every second across all rooms, only
     // checks rooms that actually have an open auction.
     setInterval(() => {
+        const now = Date.now();
         for (const room of activeRooms.values()) {
-            if (!room.auction) continue;
-            const r = auction.maybeCloseOnTimeout(room);
-            if (r && r.events && r.events.length) broadcast(io, room, r.events);
+            if (room.auction) {
+                const r = auction.maybeCloseOnTimeout(room);
+                if (r && r.events && r.events.length) broadcast(io, room, r.events);
+            }
+            // Forget rooms nobody has been in for a long time.
+            const idle = now - room.lastActivity;
+            const anyone = room.players.some(p => p.connected) || room.spectators.some(s => s.socketId);
+            if (!anyone && idle > (room.ended ? ENDED_ROOM_MS : IDLE_ROOM_MS)) {
+                stopAutoSave(room.roomCode);
+                deleteRoom(room.roomCode);
+            }
         }
     }, 1000);
 
@@ -396,13 +576,42 @@ function registerSocketHandlers(io) {
         socket.on('trade-reject',  (p) => safe(() => handlers['trade-reject'](io, socket, p), socket));
         socket.on('trade-msg',     (p) => safe(() => handlers['trade-msg'](io, socket, p), socket));
         socket.on('bankrupt',      (p) => safe(() => handlers['bankrupt'](io, socket, p), socket));
+        socket.on('pay-debt',      ()  => safe(() => handlers['pay-debt'](io, socket), socket));
+        socket.on('set-board',     (p) => safe(() => handlers['set-board'](io, socket, p), socket));
+        socket.on('remove-player', (p) => safe(() => handlers['remove-player'](io, socket, p), socket));
 
         socket.on('disconnect', () => {
             const room = getRoom(socket.data.roomCode);
             if (!room) return;
-            const p = room.players.find(pl => pl.socketId === socket.id);
-            if (p) { p.connected = false; p.socketId = null; }
-            broadcast(io, room, [{ type: 'player-disconnect', userId: socket.data.userId }]);
+            const userId = socket.data.userId;
+            if (userStillConnected(io, room, userId, socket.id)) return;
+            const spec = room.spectators.find(s => s.userId === userId);
+            if (spec) spec.socketId = null;
+            const p = room.players.find(pl => pl.userId === userId);
+            if (!p) return;
+            p.connected = false;
+            p.socketId = null;
+            p.disconnectedAt = Date.now();
+            if (!room.started) {
+                // Free the lobby seat if they don't come back.
+                setTimeout(() => {
+                    const r = getRoom(room.roomCode);
+                    const still = r?.players.find(x => x.userId === userId);
+                    if (r && !r.started && still && !still.connected) removeFromLobby(io, r, userId);
+                }, LOBBY_LEAVE_MS);
+            } else if (!p.bankrupt && !room.ended) {
+                // Only mention it if they don't come straight back (a reload
+                // or a flaky connection shouldn't spam the chat).
+                setTimeout(() => {
+                    const r = getRoom(room.roomCode);
+                    const still = r?.players.find(x => x.userId === userId);
+                    if (r && still && !still.connected && !still.bankrupt && !r.ended) {
+                        still.announcedOffline = true;
+                        sysChat(io, r, `${still.username} went offline`);
+                    }
+                }, 10000);
+            }
+            broadcast(io, room, [{ type: 'player-disconnect', userId }]);
         });
     });
 }

@@ -93,6 +93,8 @@ function createPlayerState({ userId, username, color, seat, isHost = false, star
         jailTurns: 0,                // how many failed escape attempts so far
         getOutOfJailCards: 0,        // total — engine tracks source via separate ledger
         bankrupt: false,
+        bankruptAt: null,            // turn counter when eliminated — ranks the losers
+        disconnectedAt: null,        // ms timestamp while offline, for "remove player"
 
         // Property ownership is stored both here (set of pos ids) and in the
         // authoritative tile.owner / tile.houses on the board. We keep this
@@ -155,6 +157,10 @@ function createRoom({ hostUserId, hostUsername, hostColor, boardId = 'world-tour
             tiles: board.tiles,          // static definitions
             groupColors: board.groupColors,
             groupSizes: board.groupSizes,
+            deckNames: board.deckNames || { chance: 'Chance', chest: 'Community Chest' },
+            stationNoun: board.stationNoun || 'station',
+            jailNoun: board.jailNoun || 'Jail',
+            groupNames: board.groupNames || null,
         },
         // Runtime tile state, indexed by pos. Parallel array to board.tiles.
         tileState: board.tiles.map(createTileState),
@@ -162,10 +168,21 @@ function createRoom({ hostUserId, hostUsername, hostColor, boardId = 'world-tour
         players: [host],
         spectators: [],                  // { userId, username, socketId }
         turnIndex: 0,
-        turnPhase: 'waiting',            // waiting | rolling | moving | resolving | buying | auctioning | trading | ended
+        // waiting | awaiting-roll | moving | buying | auctioning | resolving |
+        // awaiting-end-turn | ended
+        turnPhase: 'waiting',
         turnStartedAt: null,
+        turnNumber: 0,
         lastDice: null,                  // [d1, d2]
         lastDiceRoller: null,
+        extraRoll: false,                // rolled doubles this move → roll again after resolving
+
+        // Money owed that couldn't be paid on the spot. While any are open the
+        // phase is 'resolving': the debtor mortgages / sells / trades until they
+        // can pay, or goes bankrupt. Each: { id, userId, amount, reason,
+        // payees: [{ to: userId|'bank'|'pot', amount }] }.
+        debts: [],
+        debtResume: null,                // what the active player does once debts clear
 
         chanceDeck: newChanceDeck(),
         chestDeck: newChestDeck(),
@@ -223,6 +240,10 @@ function publicView(room) {
         board: room.board,
         tileState: room.tileState,
         players: room.players.map(p => ({ ...p, socketId: undefined })),
+        pendingDebt: room.debts[0] || null,
+        debts: room.debts,
+        extraRoll: room.extraRoll,
+        turnNumber: room.turnNumber,
         spectators: room.spectators.map(s => ({ userId: s.userId, username: s.username })),
         turnIndex: room.turnIndex,
         turnPhase: room.turnPhase,
@@ -238,7 +259,8 @@ function publicView(room) {
         parkingPot: room.parkingPot,
         rules: room.rules,
         bank: room.bank,
-        chat: room.chat,
+        // Chat isn't here: it's sent once as 'chat-history' on join, then as
+        // individual 'chat' messages, so a state broadcast never rewinds it.
         actionLog: room.actionLog.slice(-200), // cap on the wire
         started: room.started,
         ended: room.ended,
@@ -258,6 +280,29 @@ function appendLog(room, entry) {
     room.actionLog.push(full);
     if (room.actionLog.length > 1000) room.actionLog.splice(0, room.actionLog.length - 1000);
     return full;
+}
+
+// Display names: printable, single-spaced, 1–24 chars. Anything else is
+// dropped rather than rejected so a pasted name with an emoji still works.
+function sanitizeName(raw, fallback = 'Player') {
+    const clean = String(raw ?? '')
+        .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return Array.from(clean).slice(0, 24).join('').trim() || fallback;
+}
+
+// Two players called "Sam" are impossible to tell apart in the log, so a
+// clashing name gets a number: "Sam", "Sam 2", ...
+function uniqueName(room, name, exceptUserId = null) {
+    const taken = new Set(room.players.filter(p => p.userId !== exceptUserId).map(p => p.username.toLowerCase()));
+    if (!taken.has(name.toLowerCase())) return name;
+    for (let n = 2; n < 100; n++) {
+        const suffix = ` ${n}`;
+        const candidate = Array.from(name).slice(0, 24 - suffix.length).join('').trim() + suffix;
+        if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return name;
 }
 
 function appendChat(room, { userId, username, text, system = false }) {
@@ -289,5 +334,7 @@ module.exports = {
     bumpVersion,
     appendLog,
     appendChat,
+    sanitizeName,
+    uniqueName,
     generateRoomCode,
 };

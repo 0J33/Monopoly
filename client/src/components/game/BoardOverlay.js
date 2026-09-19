@@ -74,7 +74,7 @@ function spawn(e, room, players) {
         if (destDef && destDef.type === 'parking') {
             out.push({ id: nid(), kind: 'vacation-glow', ttl: 2100 });
             out.push({ id: nid(), kind: 'confetti', ttl: 2200 });
-            out.push({ id: nid(), kind: 'banner', text: 'VACATION', color: 'var(--gold)', ttl: 1900 });
+            out.push({ id: nid(), kind: 'banner', text: (destDef.name || 'Free Parking').toUpperCase(), color: 'var(--gold)', ttl: 1900 });
         }
     }
 
