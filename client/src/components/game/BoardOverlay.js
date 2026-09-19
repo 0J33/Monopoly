@@ -57,7 +57,8 @@ function spawn(e, room, players) {
     }
 
     if (e.type === 'jail') {
-        out.push({ id: nid(), kind: 'jail-flash', ttl: 900 });
+        out.push({ id: nid(), kind: 'jail-flash', ttl: 1000 });
+        out.push({ id: nid(), kind: 'jail-bars', ttl: 1600 });
         out.push({ id: nid(), kind: 'banner', text: 'BUSTED', color: 'var(--danger)', ttl: 1800 });
     }
 
@@ -66,10 +67,22 @@ function spawn(e, room, players) {
         out.push({ id: nid(), kind: 'banner', text: label, color: 'var(--success)', ttl: 1400 });
     }
 
+    // Vacation — landing on the Free Parking corner. Sunny burst + confetti so
+    // the "you're on holiday" beat lands as clearly as going to jail does.
+    if (e.type === 'move' && e.animate !== false) {
+        const destDef = room?.board?.tiles?.[e.to];
+        if (destDef && destDef.type === 'parking') {
+            out.push({ id: nid(), kind: 'vacation-glow', ttl: 2100 });
+            out.push({ id: nid(), kind: 'confetti', ttl: 2200 });
+            out.push({ id: nid(), kind: 'banner', text: 'VACATION', color: 'var(--gold)', ttl: 1900 });
+        }
+    }
+
     if (e.type === 'auction-start') {
         out.push({ id: nid(), kind: 'banner', text: 'AUCTION', color: 'var(--warning)', ttl: 1300 });
     }
     if (e.type === 'trade-executed') {
+        out.push({ id: nid(), kind: 'confetti', ttl: 2000 });
         out.push({ id: nid(), kind: 'banner', text: 'DEAL!', color: 'var(--success)', ttl: 1400 });
     }
 
@@ -111,6 +124,34 @@ function renderEffect(fx) {
     }
     if (fx.kind === 'jail-flash') {
         return <div key={fx.id} className="jail-flash" />;
+    }
+    if (fx.kind === 'jail-bars') {
+        return (
+            <div key={fx.id} className="jail-bars">
+                <span /><span /><span /><span /><span />
+            </div>
+        );
+    }
+    if (fx.kind === 'vacation-glow') {
+        return <div key={fx.id} className="vacation-glow" />;
+    }
+    if (fx.kind === 'confetti') {
+        const COLORS = ['#f6c445', '#ed1b24', '#1fb25a', '#4c8dff', '#d93a96', '#ffd968'];
+        return (
+            <div key={fx.id} className="confetti">
+                {Array.from({ length: 28 }).map((_, i) => (
+                    <span
+                        key={i}
+                        style={{
+                            left: (4 + (i * 79) % 92) + '%',
+                            background: COLORS[i % COLORS.length],
+                            animationDelay: (i % 7) * 0.05 + 's',
+                            transform: `rotate(${(i * 47) % 360}deg)`,
+                        }}
+                    />
+                ))}
+            </div>
+        );
     }
     if (fx.kind === 'banner') {
         return (

@@ -1,29 +1,45 @@
 /* ─── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-    /* Background ramp — nearly-black with a cool tint. Three levels let us stack
-       panels (bg → surface → surface-2) without resorting to borders everywhere. */
-    --bg:         #0b0f17;
-    --bg-1:       #10161f;
-    --surface:    #161d29;
-    --surface-2:  #1c2433;
-    --surface-3:  #242d3e;
-    --border:     #2a3346;
-    --border-2:   #3a4560;
+    /* Background ramp — deep warm green-black, like a felt game table under low
+       light. Three surface levels let us stack panels without borders everywhere.
+       Warming the ramp (green/olive tint, not cold navy) is what pulls the whole
+       app away from "generic dark SaaS" toward "premium board game". */
+    --bg:         #0c1210;
+    --bg-1:       #111813;
+    --surface:    #15201a;
+    --surface-2:  #1c2a22;
+    --surface-3:  #26362c;
+    --border:     #2c3b31;
+    --border-2:   #3d5142;
 
-    /* Text ramp */
-    --text:       #e8ecf4;
-    --text-2:     #b0b9cc;
-    --text-3:     #7c8699;
-    --text-4:     #525c6e;
+    /* Text ramp — warm off-white so it reads on the green table. */
+    --text:       #eef2ec;
+    --text-2:     #b6c2b6;
+    --text-3:     #869382;
+    --text-4:     #576155;
 
-    /* Accents */
-    --accent:       #4c8dff;
-    --accent-2:     #6fa6ff;
-    --accent-soft:  rgba(76, 141, 255, 0.15);
+    /* ─── Brand identity ─────────────────────────────────────────────────
+       Monopoly gold is the hero accent (brand, dice, primary CTAs, board
+       emblem). Felt green is the table. A supporting blue stays for neutral
+       informational bits (links, secondary toggles). */
+    --gold:       #f6c445;
+    --gold-2:     #ffd968;
+    --gold-deep:  #c8971f;
+    --gold-soft:  rgba(246, 196, 69, 0.15);
+    --felt:       #123a26;
+    --felt-2:     #0c2a1b;
+    --felt-line:  rgba(246, 196, 69, 0.10);
+
+    /* Accents — primary is now gold; blue kept as an info secondary. */
+    --accent:       #f6c445;
+    --accent-2:     #ffd968;
+    --accent-soft:  rgba(246, 196, 69, 0.15);
+    --info:         #4c8dff;
+    --info-2:       #6fa6ff;
     --success:      #34d399;
     --warning:      #fbbf24;
     --danger:       #f87171;
-    --money:        #34d399;
+    --money:        #46d38a;
 
     /* Property-group colors — match server boards.js */
     --g-brown:  #955436;
@@ -39,12 +55,16 @@
     --radius-lg: 14px;
     --radius-sm: 6px;
 
-    --shadow:       0 2px 8px rgba(0, 0, 0, 0.25);
-    --shadow-lg:    0 8px 30px rgba(0, 0, 0, 0.45);
-    --shadow-glow:  0 0 24px -6px var(--accent);
+    --shadow:       0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-lg:    0 8px 30px rgba(0, 0, 0, 0.5);
+    --shadow-glow:  0 0 24px -4px var(--gold);
 
-    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --font-sans:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+    /* Fredoka — rounded, friendly, board-game display face for the wordmark,
+       headings, banners and victory screen. This one font choice does most of
+       the "feels like a game, not a dashboard" lifting. */
+    --font-display: 'Fredoka', 'Inter', system-ui, sans-serif;
 
     --ease:     cubic-bezier(0.22, 1, 0.36, 1);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -132,15 +152,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .btn:active:not(:disabled) { transform: translateY(0); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: linear-gradient(180deg, var(--gold-2), var(--gold));
+    border-color: var(--gold-deep);
+    color: #2a1e05;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 0 var(--gold-deep), var(--shadow);
 }
 .btn.primary:hover:not(:disabled) {
-    background: var(--accent-2);
-    border-color: var(--accent-2);
-    box-shadow: var(--shadow-glow);
+    background: linear-gradient(180deg, #ffe081, var(--gold-2));
+    border-color: var(--gold-deep);
+    box-shadow: 0 3px 0 var(--gold-deep), var(--shadow-glow);
+    transform: translateY(-1px);
 }
+.btn.primary:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 0 var(--gold-deep); }
 .btn.danger {
     background: transparent;
     border-color: var(--danger);
@@ -156,11 +181,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .btn.lg { padding: 14px 24px; font-size: 16px; }
 
 .card {
-    background: var(--surface);
+    background: linear-gradient(180deg, var(--surface), var(--bg-1));
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 20px;
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
+
+/* Rounded, friendly display type — the wordmark, big headings, banners. */
+.display { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.2px; }
 
 .chip {
     display: inline-flex;
@@ -194,7 +223,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 /* A subtle moving grid background used on the home + lobby screens. */
 .grid-bg {
     background:
-      radial-gradient(1200px 600px at 10% -10%, rgba(76,141,255,0.12), transparent 60%),
-      radial-gradient(900px 500px at 120% 100%, rgba(52,211,153,0.08), transparent 60%),
+      radial-gradient(1200px 620px at 12% -12%, rgba(246,196,69,0.13), transparent 60%),
+      radial-gradient(1000px 560px at 118% 108%, rgba(31,178,90,0.12), transparent 62%),
+      radial-gradient(700px 700px at 88% 4%, rgba(237,27,36,0.06), transparent 60%),
       var(--bg);
 }

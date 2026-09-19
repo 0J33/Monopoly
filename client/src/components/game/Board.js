@@ -30,7 +30,12 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
             ))}
 
             <div className="board-center">
-                <div className="brand">MONOPOLY</div>
+                {/* Felt table + diamond emblem sit behind the dice/actions so the
+                    centre reads as a real board, not empty space. */}
+                <div className="felt-table" aria-hidden />
+                <div className="emblem" aria-hidden>
+                    <div className="emblem-diamond"><span>MONOPOLY</span></div>
+                </div>
                 <div className="center-stack">
                     <Dice
                         dice={room?.lastDice}

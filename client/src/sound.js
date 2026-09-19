@@ -85,6 +85,7 @@ function noise({ dur = 0.12, vol = 0.15, filterFreq = 2000, filterQ = 1, type = 
     src.stop(now + dur + 0.02);
 }
 
+// eslint-disable-next-line no-unused-vars
 function chord(freqs, opts = {}) { freqs.forEach((f, i) => setTimeout(() => tone({ freq: f, ...opts }), i * (opts.stagger || 0))); }
 
 // ─── Effect bank ────────────────────────────────────────────────────────────

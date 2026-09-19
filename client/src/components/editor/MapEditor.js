@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 
 // Minimal custom-board editor. Starts from the default board and lets you
 // rename tiles, change groups, adjust prices. Position + type are locked

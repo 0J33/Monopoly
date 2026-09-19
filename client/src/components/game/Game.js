@@ -7,7 +7,6 @@ import PlayerPanel from './PlayerPanel';
 import PlayerStrip from './PlayerStrip';
 import ChatPanel from './ChatPanel';
 import TradesPanel from './TradesPanel';
-import LogDrawer from './LogDrawer';
 import ActionLog from './ActionLog';
 import CardModal from './CardModal';
 import AuctionModal from './AuctionModal';
@@ -29,7 +28,6 @@ export default function Game({ userId, pushToast }) {
     const [openPropertyPos, setOpenPropertyPos] = useState(null);
     const [drawnCard, setDrawnCard] = useState(null);
     const [chatOpen, setChatOpen] = useState(false);
-    const [logOpen, setLogOpen] = useState(false);
 
     useEffect(() => {
         const last = events[events.length - 1];
@@ -111,22 +109,28 @@ export default function Game({ userId, pushToast }) {
 
                 <PlayerStrip room={room} me={me} onTrade={(uid) => setTradeWith(uid)} />
 
-                <main style={{ display: 'grid', placeItems: 'center', padding: 10, minHeight: 0 }}>
-                    <div style={{ width: 'min(100%, 100vw - 20px)', maxHeight: '100%', aspectRatio: '1 / 1' }}>
-                        <Board
-                            room={room}
-                            userId={userId}
-                            diceRolling={diceRolling}
-                            events={events}
-                            me={me}
-                            isMyTurn={isMyTurn}
-                            act={act}
-                            onTileClick={(pos) => setOpenPropertyPos(pos)}
-                        />
+                {/* Board pinned near the top, live log fills the rest so a portrait
+                    phone doesn't waste the vertical space below a square board. */}
+                <main style={{ display: 'flex', flexDirection: 'column', padding: '6px 10px 10px', minHeight: 0, gap: 8 }}>
+                    <div style={{ display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <div style={{ width: 'min(100%, 100vw - 20px, 54vh)', aspectRatio: '1 / 1' }}>
+                            <Board
+                                room={room}
+                                userId={userId}
+                                diceRolling={diceRolling}
+                                events={events}
+                                me={me}
+                                isMyTurn={isMyTurn}
+                                act={act}
+                                onTileClick={(pos) => setOpenPropertyPos(pos)}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, minHeight: 72, display: 'flex', flexDirection: 'column' }}>
+                        <ActionLog log={room.actionLog} players={room.players} tiles={room.board.tiles} />
                     </div>
                 </main>
 
-                <LogDrawer open={logOpen} onOpen={() => setLogOpen(true)} onClose={() => setLogOpen(false)} room={room} />
                 {modals}
             </div>
         );

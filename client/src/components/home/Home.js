@@ -54,7 +54,7 @@ export default function Home({ pushToast }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <Logo size={44} />
                         <div>
-                            <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }}>Monopoly</div>
+                            <div className="display" style={{ fontSize: 26, letterSpacing: 0.3, color: 'var(--gold)', lineHeight: 1 }}>Monopoly</div>
                             <div style={{ color: 'var(--text-3)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>ojee.net</div>
                         </div>
                     </div>
@@ -71,7 +71,7 @@ export default function Home({ pushToast }) {
                 }}>
                     {/* ─── Create / join panel ─────────────────────────────────── */}
                     <div className="card" style={{ padding: isMobile ? 20 : 32 }}>
-                        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, marginBottom: 4 }}>
+                        <div className="display" style={{ fontSize: 34, letterSpacing: 0.2, marginBottom: 4 }}>
                             Roll the dice.
                         </div>
                         <div style={{ color: 'var(--text-3)', marginBottom: 28 }}>

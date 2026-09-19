@@ -21,6 +21,7 @@ const STEP_MS = 160;
 export default function PlayerToken({ player, isActive, stackIndex, events, onHover }) {
     const [displayPos, setDisplayPos] = useState(player.position);
     const [isJailShaking, setJailShaking] = useState(false);
+    const [walking, setWalking] = useState(false);
     const queueRef = useRef([]);
     const runningRef = useRef(false);
     const lastSeenVersion = useRef(null);
@@ -66,8 +67,14 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
         if (next.kind === 'walk') {
             const path = next.path || [];
             let i = 0;
+            setWalking(true);
             const step = () => {
-                if (i >= path.length) { runningRef.current = false; drain(); return; }
+                if (i >= path.length) {
+                    setWalking(false);
+                    runningRef.current = false;
+                    drain();
+                    return;
+                }
                 setDisplayPos(path[i]);
                 i++;
                 setTimeout(step, STEP_MS);
@@ -90,16 +97,35 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 
     return (
         <div
-            className={`token ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''}`}
+            className="token"
             style={{
                 left: `calc(${xPct}% + ${off[0]}px)`,
                 top:  `calc(${yPct}% + ${off[1]}px)`,
-                background: player.color,
-                color: isLight ? '#0b0f17' : 'white',
-                textShadow: isLight ? 'none' : '0 1px 2px rgba(0,0,0,0.7)',
             }}
             onMouseEnter={(e) => onHover?.(e, player)}
             onMouseLeave={() => onHover?.(null, null)}
-        >{initial}</div>
+        >
+            {/* Inner body carries every effect transform (pulse / hop / shake)
+                so they never fight the outer element's positioning transform. */}
+            <div
+                className={`token-body ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''} ${walking ? 'walking' : ''}`}
+                style={{
+                    background: `radial-gradient(circle at 34% 28%, ${lighten(player.color)}, ${player.color} 68%)`,
+                    color: isLight ? '#0b0f17' : 'white',
+                    textShadow: isLight ? 'none' : '0 1px 2px rgba(0,0,0,0.7)',
+                }}
+            >{initial}</div>
+        </div>
     );
+}
+
+// Quick perceptual lighten for the token's glossy highlight — just blends the
+// colour toward white so every token reads as a rounded 3D puck.
+function lighten(hex) {
+    if (!hex || hex[0] !== '#' || hex.length < 7) return 'rgba(255,255,255,0.6)';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const mix = (c) => Math.round(c + (255 - c) * 0.55);
+    return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
