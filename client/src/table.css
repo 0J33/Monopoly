@@ -146,6 +146,11 @@
 /* Token pucks — the same glossy pieces that walk the board. */
 .puck {
     width: 34px; height: 34px;
+    /* border-box: the 2px rim is part of the size asked for. Without it a
+       `size={28}` puck drew at 32px, so every puck was bigger than the
+       layout around it expected and its initial proportionally smaller. */
+    box-sizing: border-box;
+    line-height: 1;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.9);
     box-shadow: 0 2px 5px rgba(0,0,0,0.55), inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45);

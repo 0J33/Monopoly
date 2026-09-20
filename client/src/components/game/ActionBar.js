@@ -82,7 +82,9 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
         if (me.bankrupt) return `You're out — watching`;
         if (myDebt) return 'Settle your debt';
         if (firstDebt) return `Waiting for ${nameOf(firstDebt.userId)} to pay $${firstDebt.amount.toLocaleString()}…`;
-        if (phase === 'auctioning') return 'Auction in progress…';
+        // Nothing during an auction: the auction card is already on the table
+        // saying so, in more detail, over this very spot.
+        if (phase === 'auctioning') return '';
         if (busy) return isMyTurn ? 'Rolling…' : `${active?.username} is rolling…`;
         if (isMyTurn) {
             if (phase === 'buying') return 'Your decision';
@@ -93,13 +95,14 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
         return `Waiting for ${active?.username}…`;
     })();
 
+    // `display: contents` so the status and the buttons are laid out by the
+    // centre stack itself. As one block they moved together: the line of text
+    // rode up and down with however many buttons happened to be showing, and
+    // at rest it settled straight across the emblem's wordmark.
     return (
-        <div style={{
-            width: '100%', maxWidth: 460,
-            display: 'flex', flexDirection: 'column', gap: 10,
-            alignItems: 'stretch',
-        }}>
+        <div className="action-slot">
             <div className="action-status">{status}</div>
+            <div className="action-buttons">
             {note}
 
             {actions.length > 0 && (
@@ -127,6 +130,7 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
                     ))}
                 </div>
             )}
+            </div>
         </div>
     );
 }

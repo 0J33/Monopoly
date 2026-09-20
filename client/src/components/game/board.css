@@ -179,18 +179,29 @@
 
 /* Inner stack: dice on top, roller label, then the action bar. Stretched to
    fill the full center height so the buttons get all the room they need. */
+/* Four fixed rows rather than a flex column spread apart: dice, who rolled,
+   the status line, then the buttons. Every one keeps its place whether or not
+   it has anything in it, so nothing in the centre moves because something
+   else appeared. The buttons sit at the bottom of their row and grow upward,
+   away from the dice. */
 .center-stack {
     position: relative;
     z-index: 2;
     pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2vmin;
+    display: grid;
+    grid-template-rows: auto 2.2vmin 2.4vmin minmax(0, 1fr);
+    justify-items: center;
+    gap: 1.6vmin;
     height: 100%;
     width: 100%;
     padding: 2vmin;
+}
+/* The bar hands its two pieces straight to the grid above. */
+.action-slot { display: contents; }
+.action-buttons {
+    width: 100%; max-width: 460px;
+    display: flex; flex-direction: column; gap: 10px;
+    align-self: end;
 }
 
 /* Felt playing surface filling the centre well — deep green with a soft
@@ -491,9 +502,12 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 600;
-    min-height: 16px;
-    text-wrap: balance;
-    overflow-wrap: anywhere;
+    /* One line, in its own row. It used to wrap and push everything below it. */
+    align-self: center;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .log-name { font-weight: 700; overflow-wrap: anywhere; }
@@ -504,8 +518,13 @@
     padding-top: 4px;
 }
 
-/* A payment you can't make yet: a printed bill on the table. */
-.board-center:has(.bill) .emblem { opacity: 0; transition: opacity 0.2s var(--ease); }
+/* The emblem is decoration and always loses to something real on the table.
+   It sits dead centre, which is exactly where a status line or a printed bill
+   lands, and at 0.4 opacity the wordmark showed straight through the text. */
+.emblem { transition: opacity 0.2s var(--ease); }
+.board-center:has(.bill) .emblem { opacity: 0; }
+.board-center:has(.action-buttons > *) .emblem,
+.board-center:has(.action-status:not(:empty)) .emblem { opacity: 0.16; }
 .bill { width: 100%; max-width: 420px; overflow: hidden; }
 .bill-band {
     display: flex; align-items: baseline; justify-content: space-between; gap: 10px;

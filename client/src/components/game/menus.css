@@ -142,7 +142,13 @@ button.mini-deed:hover:not(:disabled) { transform: translateY(-2px); }
 .auction-quick .btn { justify-content: center; font-family: var(--font-mono); font-weight: 700; }
 .auction-custom { display: flex; gap: 8px; margin-top: 10px; }
 .auction-custom .field { flex: 1; min-width: 0; }
-.auction-status { font-size: 13px; color: var(--ink-2); margin-top: 10px; min-height: 18px; }
+/* Two lines' worth, always. The sentence changes every time the top bid
+   does, and a slot that grows with it pushed Pass down mid-auction. */
+.auction-status {
+    font-size: 13px; line-height: 1.35; color: var(--ink-2);
+    margin-top: 10px; height: 35px; overflow: hidden;
+}
+.auction-pass { width: 100%; justify-content: center; margin-top: 10px; }
 .auction-list { display: flex; justify-content: space-between; margin-top: 14px; padding: 8px 2px; border-top: 1px solid var(--rule); font-size: 14px; }
 .auction-who { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 14px; font-weight: 600; }
 .auction-who span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }

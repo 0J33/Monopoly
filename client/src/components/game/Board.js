@@ -42,11 +42,14 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                         dice={room?.lastDice}
                         rolling={diceRolling}
                     />
-                    {room?.lastDiceRoller && (
-                        <div className="rolled-by">
-                            {players.find(p => p.userId === room.lastDiceRoller)?.username || '—'} rolled
-                        </div>
-                    )}
+                    {/* Always rendered, empty or not. The centre is a fixed
+                        grid, and a child that comes and goes moves every row
+                        below it up and down by its own height. */}
+                    <div className="rolled-by">
+                        {room?.lastDiceRoller
+                            ? `${players.find(p => p.userId === room.lastDiceRoller)?.username || '—'} rolled`
+                            : ''}
+                    </div>
                     <ActionBar
                         room={room}
                         me={me}

@@ -33,9 +33,24 @@ export default function AuctionModal({ room, me, act }) {
     const validBid  = Number.isFinite(bid) && bid >= minBid;
     const canBid    = inAuction && !passed && !topBidder && validBid && me.cash >= bid;
     const bidding   = inAuction && !passed && !topBidder;
-    const quick = [minBid, minBid + 40, minBid + 90].filter(v => v <= me.cash);
+    // Always three, never a filtered list: dropping the ones you cannot
+    // afford changed the row's width mid-auction, so the button under your
+    // cursor moved between the decision and the click.
+    const quick = [minBid, minBid + 40, minBid + 90];
     const leader = room.players.find(p => p.userId === a.currentBidder);
     const secs = Math.ceil(msLeft / 1000);
+
+    const bidLabel = topBidder ? 'You lead'
+        : passed ? 'You passed'
+        : !inAuction ? 'Watching'
+        : validBid ? `Bid $${bid.toLocaleString()}`
+        : `Min $${minBid.toLocaleString()}`;
+
+    const note = topBidder ? "You're the top bidder — it's yours if nobody beats it."
+        : !inAuction ? "You're watching this auction."
+        : passed ? 'You passed — the rest bid it out.'
+        : me.cash < minBid ? `You can't afford the next bid (you have $${me.cash.toLocaleString()}).`
+        : `Next bid is $${minBid.toLocaleString()} or more.`;
 
     return (
         <div className="modal-backdrop" style={{ zIndex: 80 }}>
@@ -60,41 +75,37 @@ export default function AuctionModal({ room, me, act }) {
                                 : <span className="auction-leader" style={{ color: 'var(--ink-3)' }}>No bids yet</span>}
                         </div>
 
-                        {bidding && (
-                            <>
-                                <div className="auction-quick">
-                                    {quick.map(v => (
-                                        <button key={v} className="btn paper-ghost" onClick={() => act('auction-bid', { amount: v })}>${v}</button>
-                                    ))}
-                                </div>
-                                <div className="auction-custom">
-                                    <input
-                                        type="number" inputMode="numeric" aria-label="Your bid"
-                                        className="field" style={{ fontFamily: 'var(--font-mono)', textAlign: 'center' }}
-                                        min={minBid}
-                                        value={Number.isFinite(bid) ? bid : ''}
-                                        onChange={e => setBid(e.target.value === '' ? NaN : Math.floor(Number(e.target.value)))}
-                                        onKeyDown={e => { if (e.key === 'Enter' && canBid) act('auction-bid', { amount: bid }); }}
-                                    />
-                                    <button className="btn ink" disabled={!canBid} onClick={() => act('auction-bid', { amount: bid })}>
-                                        {validBid ? `Bid $${bid}` : `Min $${minBid}`}
-                                    </button>
-                                </div>
-                            </>
-                        )}
-
-                        <div className="auction-status">
-                            {topBidder && <>You're the top bidder — it's yours if nobody beats it.</>}
-                            {!inAuction && <>You're watching this auction.</>}
-                            {passed && !topBidder && <>You passed.</>}
-                            {bidding && me.cash < minBid && <>You can't afford the next bid (you have ${me.cash.toLocaleString()}).</>}
+                        {/* Every control is always here. An auction is eight
+                            seconds long and the top bid changes under you, so
+                            a panel that adds and removes its own buttons moves
+                            the one you are reaching for. They disable instead. */}
+                        <div className="auction-quick">
+                            {quick.map(v => (
+                                <button key={v} className="btn paper-ghost"
+                                    disabled={!bidding || v > me.cash}
+                                    title={v > me.cash ? `You have $${me.cash.toLocaleString()}` : undefined}
+                                    onClick={() => act('auction-bid', { amount: v })}>${v}</button>
+                            ))}
+                        </div>
+                        <div className="auction-custom">
+                            <input
+                                type="number" inputMode="numeric" aria-label="Your bid"
+                                className="field" style={{ fontFamily: 'var(--font-mono)', textAlign: 'center' }}
+                                min={minBid} disabled={!bidding}
+                                value={Number.isFinite(bid) ? bid : ''}
+                                onChange={e => setBid(e.target.value === '' ? NaN : Math.floor(Number(e.target.value)))}
+                                onKeyDown={e => { if (e.key === 'Enter' && canBid) act('auction-bid', { amount: bid }); }}
+                            />
+                            <button className="btn ink" disabled={!canBid} onClick={() => act('auction-bid', { amount: bid })}>
+                                {bidLabel}
+                            </button>
                         </div>
 
-                        {bidding && (
-                            <button className="btn paper-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }} onClick={() => act('auction-pass')}>
-                                <X size={14} /> Pass
-                            </button>
-                        )}
+                        <div className="auction-status">{note}</div>
+
+                        <button className="btn paper-ghost auction-pass" disabled={!bidding} onClick={() => act('auction-pass')}>
+                            <X size={14} /> Pass
+                        </button>
 
                         <div className="auction-list">
                             <span>List price</span><b className="mono">${def.price}</b>
