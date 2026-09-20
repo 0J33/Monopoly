@@ -52,7 +52,42 @@ echo "→ syncing server → $SERVER_DIR"
 
 # 4) Remote install + restart. A non-interactive ssh shell doesn't load nvm,
 # so source it first to get node/npm on PATH.
-echo "→ remote install + restart"
-"${SSH[@]}" "$HOST" "source ~/.nvm/nvm.sh 2>/dev/null || true; cd $SERVER_DIR && npm install --omit=dev && sudo systemctl restart monopoly-server"
+echo "→ remote install"
+"${SSH[@]}" "$HOST" "source ~/.nvm/nvm.sh 2>/dev/null || true; cd $SERVER_DIR && npm install --omit=dev"
+
+# The restart cannot assume sudo. `sudo systemctl restart monopoly-server`
+# needs either a NOPASSWD rule (disinteg has them for factorio and tegtech,
+# not for this one) or a terminal to type a password into — and a scripted
+# ssh has no terminal, so it failed with "a terminal is required to read the
+# password" AFTER everything had been copied: a deploy that looked finished
+# and was still running the old code.
+#
+# The unit is Restart=on-failure, so killing the process is a restart, and
+# killing our own service needs no privilege. sudo is still tried first, so
+# adding a NOPASSWD rule later silently upgrades this to the clean path.
+echo "→ restart"
+"${SSH[@]}" "$HOST" bash -s <<'REMOTE'
+set -u
+unit=monopoly-server
+before=$(systemctl show "$unit" -p MainPID --value)
+if sudo -n systemctl restart "$unit" 2>/dev/null; then
+    echo "  restarted via sudo"
+else
+    echo "  no sudo for $unit; killing pid ${before} — Restart=on-failure brings it back"
+    if [ -n "$before" ] && [ "$before" != "0" ]; then kill -9 "$before" 2>/dev/null || true; fi
+fi
+for _ in $(seq 1 20); do
+    sleep 1
+    now=$(systemctl show "$unit" -p MainPID --value)
+    state=$(systemctl show "$unit" -p ActiveState --value)
+    if [ "$state" = "active" ] && [ -n "$now" ] && [ "$now" != "0" ] && [ "$now" != "$before" ]; then
+        echo "  up as pid $now"
+        exit 0
+    fi
+done
+echo "  FAILED: $unit did not come back" >&2
+systemctl show "$unit" -p ActiveState -p SubState --value >&2
+exit 1
+REMOTE
 
 echo "✓ deployed"
