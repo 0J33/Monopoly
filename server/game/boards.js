@@ -148,16 +148,21 @@ function validateBoard(board) {
 //   shortNames  what the tile face shows when the full name is too long for it
 function renameBoard(source, id, name, names, extra = {}) {
     const shorts = extra.shortNames || {};
+    // A board may recolour a group. Each tile bakes in its own `color` at
+    // construction, so overriding the palette alone would change the legend
+    // and leave every tile on the board painted the old colour.
+    const colors = { ...GROUPS, ...(extra.groupColors || {}) };
     const mapped = source.tiles.map(t => {
         const out = names[t.pos] ? { ...t, name: names[t.pos] } : { ...t };
         if (shorts[t.pos]) out.short = shorts[t.pos];
+        if (out.group && colors[out.group]) out.color = colors[out.group];
         return out;
     });
     delete extra.shortNames;
     return Object.freeze({
         id, name,
         tiles: mapped,
-        groupColors: GROUPS,
+        groupColors: colors,
         groupSizes: computeGroupSizes(mapped),
         deckNames: { chance: 'Chance', chest: 'Community Chest' },
         stationNoun: 'station',
@@ -243,9 +248,14 @@ const RICHUP_WORLD = renameBoard(WORLD_TOUR, 'richup-world', 'Richup World', {
     jailNoun: 'Prison',
     shortNames: { 10: 'In Prison', 12: 'Electric Co', 28: 'Water Co' },
     groupNames: {
-        brown: 'Brazil', lblue: 'Israel', pink: 'Italy', orange: 'Germany',
+        brown: 'Brazil', lblue: 'Palestine', pink: 'Italy', orange: 'Germany',
         red: 'China', yellow: 'France', green: 'United Kingdom', dblue: 'USA',
     },
+    // Off-white, from the flag. The other flag colours are all taken on this
+    // board — red is China, green is the UK — and black would vanish against
+    // dark felt, which is the same reason the black player token had to be
+    // lifted to stay visible.
+    groupColors: { lblue: '#EFEFEF' },
 });
 
 const BUILTIN_BOARDS = {

@@ -34,6 +34,13 @@ function timeline(evs) {
     return { total: t, cardAt };
 }
 
+/** userId -> cash, for the delayed snapshot the panels read. */
+function cashOf(room) {
+    const out = {};
+    for (const p of room?.players || []) out[p.userId] = p.cash;
+    return out;
+}
+
 export default function Game({ userId, pushToast, roomState }) {
     const nav = useNavigate();
     const isMobile = useIsMobile();
@@ -50,6 +57,12 @@ export default function Game({ userId, pushToast, roomState }) {
     const [busy, setBusy] = useState(false);
     const [victoryHidden, setVictoryHidden] = useState(false);
     const [shownLog, setShownLog] = useState(() => room?.actionLog || []);
+    // Cash follows the animation too. The server settles rent the instant the
+    // move resolves, so the panel used to drop $200 while the token was still
+    // three tiles from the property that charged it — the money moved before
+    // the thing that caused it had finished happening. Released on the same
+    // beat as the log entry that explains it.
+    const [shownCash, setShownCash] = useState(() => cashOf(room));
     const [, setTick] = useState(0);
 
     // Play each new batch of events in order, and hold the log back until the
@@ -92,6 +105,7 @@ export default function Game({ userId, pushToast, roomState }) {
             if (version <= shownVersion.current) return;
             shownVersion.current = version;
             setShownLog(log);
+            setShownCash(cashOf(room));
         };
         if (at <= now) show(); else later(show, at - now);
         timers.current = timers.current.slice(-50);
@@ -235,6 +249,15 @@ export default function Game({ userId, pushToast, roomState }) {
                 height: '100dvh',
                 overflow: 'hidden',
                 background: 'var(--bg)',
+                // A phone's viewport is not its usable area: the status bar
+                // and camera cut into the top, the home indicator into the
+                // bottom. Without these the header sat under the notch and
+                // the log ran beneath the gesture bar.
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                paddingLeft: 'env(safe-area-inset-left, 0px)',
+                paddingRight: 'env(safe-area-inset-right, 0px)',
+                boxSizing: 'border-box',
             }}>
                 <header style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '8px 10px 4px' }}>
                     <button className="btn ghost sm" onClick={() => nav('/')} title="Back to home"><LogOut size={13} /></button>
@@ -245,7 +268,7 @@ export default function Game({ userId, pushToast, roomState }) {
                     {headerButtons}
                 </header>
 
-                <PlayerStrip room={room} me={me} onTrade={startTrade} onRemove={removePlayer} />
+                <PlayerStrip room={room} me={me} shownCash={shownCash} onTrade={startTrade} onRemove={removePlayer} />
 
                 {/* Board pinned near the top, live log fills the rest so a portrait
                     phone doesn't waste the vertical space below a square board. */}
@@ -283,6 +306,7 @@ export default function Game({ userId, pushToast, roomState }) {
                         <PlayerPanel
                             key={p.userId}
                             p={p}
+                            shownCash={shownCash[p.userId]}
                             me={me}
                             isMe={p.userId === userId}
                             isActive={active?.userId === p.userId && room.started && !room.ended}

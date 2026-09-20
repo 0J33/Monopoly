@@ -82,19 +82,31 @@
     flex-wrap: wrap;
     max-width: 100%;
 }
+/* Houses were 0.9vmin — about eight pixels on a full-size board, dark green
+   on dark felt, and four of them in a row read as a smudge. Bigger, lighter,
+   and outlined against the tile rather than into it. */
 .house {
-    width: 0.9vmin; height: 0.9vmin;
-    background: var(--g-green);
-    border: 1px solid rgba(0,0,0,0.4);
+    width: 1.25vmin; height: 1.25vmin;
+    background: linear-gradient(160deg, #6ee7a8, var(--g-green));
+    border: 1px solid rgba(255,255,255,0.65);
     border-radius: 1px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.65), inset 0 -2px 0 rgba(0,0,0,0.25);
 }
+/* A hotel is not four houses and should not have to be counted to be told
+   apart: it is wider, red, and carries a bar across it. */
 .hotel {
-    width: 1.6vmin; height: 0.9vmin;
-    background: var(--g-red);
-    border: 1px solid rgba(0,0,0,0.4);
+    position: relative;
+    width: 2.6vmin; height: 1.35vmin;
+    background: linear-gradient(160deg, #ff8a80, var(--g-red));
+    border: 1px solid rgba(255,255,255,0.75);
     border-radius: 1px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.65), inset 0 -2px 0 rgba(0,0,0,0.25);
+}
+.hotel::after {
+    content: '';
+    position: absolute; left: 18%; right: 18%; top: 50%;
+    height: 1px; transform: translateY(-50%);
+    background: rgba(255,255,255,0.8);
 }
 
 /* ─── Player tokens ─────────────────────────────────────────────────────────── */
@@ -546,3 +558,61 @@
 .bill-btn { justify-content: center; }
 .bill-danger { color: #9b1c14; }
 .jail-note { font-size: clamp(11px, 1.3vmin, 14px); color: var(--text-2); text-align: center; line-height: 1.35; }
+
+/* ─── Money changes ─────────────────────────────────────────────────────────
+   A figure that changes silently is a figure nobody reads. Each change floats
+   off the number it happened to, weighted by what it cost that player. */
+.money-deltas {
+    position: absolute;
+    pointer-events: none;
+    z-index: 6;
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 2px;
+}
+.money-deltas--right { right: 10px; top: 50%; transform: translateY(-50%); }
+.money-deltas--left  { left: 10px; top: 50%; transform: translateY(-50%); align-items: flex-start; }
+
+.money-delta {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    white-space: nowrap;
+    animation: money-float 1.8s var(--ease) forwards;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+.money-delta.up   { color: var(--g-green); }
+.money-delta.down { color: var(--danger); }
+
+/* Three weights, not a gradient: the reader is judging fine / ouch / disaster. */
+.money-delta.t-small { font-size: 12px; opacity: 0.9; }
+.money-delta.t-big   { font-size: 17px; }
+.money-delta.t-huge  { font-size: 23px; letter-spacing: -0.02em; }
+.money-delta.t-huge.down { text-shadow: 0 0 14px rgba(224,49,49,0.85), 0 1px 3px rgba(0,0,0,0.8); }
+.money-delta.t-huge.up   { text-shadow: 0 0 14px rgba(70,211,138,0.85), 0 1px 3px rgba(0,0,0,0.8); }
+
+@keyframes money-float {
+    0%   { opacity: 0; transform: translateY(6px) scale(0.85); }
+    14%  { opacity: 1; transform: translateY(0) scale(1); }
+    70%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-16px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .money-delta { animation: money-fade 1.8s steps(1) forwards; }
+    @keyframes money-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+/* The rent an owned tile would charge, in the slot its price used to occupy.
+   Brighter than a price, because a price is trivia once it is bought and a
+   rent is the thing about to happen to you. */
+.tile-rent {
+    color: var(--gold);
+    font-weight: 800;
+}
+
+/* The out-of-the-game bill. Same printed form as a payment due, in a colour
+   that is finished rather than urgent. */
+.bill-band--out { background: #4a4036; }
+
+
+/* A bill is the whole point of the centre when it is showing, so it takes the
+   row it is in rather than sitting at the bottom of it. */
+.action-buttons--bill { align-self: center; justify-self: center; }

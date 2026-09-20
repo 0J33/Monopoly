@@ -4,12 +4,24 @@
 const { transfer, tileDef, tileSt, ownedInGroup, ownsFullGroup } = require('./engine');
 const { appendLog } = require('./state');
 
-// Common guard: a live game, a real tile, a player still in it.
+// Common guard: a live game, a real tile, a player still in it, on their turn.
+//
+// The turn check was missing entirely, so anyone could build a hotel, mortgage
+// or sell in the middle of someone else's roll — including reacting to a rent
+// they had just watched someone else land on.
+//
+// The one exception is a player who owes money: settling a debt is exactly
+// when you must be able to mortgage and sell, and a debt can outlive the
+// moment it was created (a card that charges every player resolves one at a
+// time). Being owed something is not an exception — only owing.
 function check(room, player, pos) {
     if (!room.started || room.ended) return 'not-in-game';
     if (player.bankrupt) return 'bankrupt';
     if (!Number.isInteger(pos) || pos < 0 || pos >= room.board.tiles.length) return 'bad-tile';
     if (tileSt(room, pos)?.owner !== player.userId) return 'not-owner';
+    const active = room.players[room.turnIndex];
+    const owes = room.debts.some(d => d.userId === player.userId);
+    if (!owes && active?.userId !== player.userId) return 'not-your-turn';
     return null;
 }
 // Spending money you owe on buildings or interest isn't allowed.

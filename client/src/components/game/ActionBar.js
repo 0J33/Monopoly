@@ -9,6 +9,18 @@ import { liquidValue } from './playerStatus';
 // `busy` is true while the dice / token animation for the last roll is still
 // playing — the buttons wait for it, so nobody is offered "Buy Boardwalk"
 // before their token has visibly arrived there.
+/** Where a knocked-out player finished: last out is 2nd, and so on. */
+function ordinalOut(room, me) {
+    const out = room.players.filter(p => p.bankrupt).sort((a, b) => (b.bankruptAt || 0) - (a.bankruptAt || 0));
+    const idx = out.findIndex(p => p.userId === me.userId);
+    if (idx < 0) return '';
+    const place = room.players.length - idx;
+    const suffix = place % 10 === 1 && place % 100 !== 11 ? 'st'
+        : place % 10 === 2 && place % 100 !== 12 ? 'nd'
+        : place % 10 === 3 && place % 100 !== 13 ? 'rd' : 'th';
+    return `${place}${suffix}`;
+}
+
 export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
     if (!room || !me) return null;
 
@@ -23,6 +35,36 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
     const actions = [];
     let note = null;
 
+    if (me.bankrupt && !room.ended) {
+        // Being out of the game is a state the screen has to state. It used to
+        // be an empty action area and a greyed-out panel, which reads as the
+        // UI having broken rather than as the game having ended for you — and
+        // left the obvious question unanswered, so people waited for a way
+        // back that does not exist.
+        const entry = [...(room.actionLog || [])].reverse().find(e => e.kind === 'bankrupt' && e.userId === me.userId);
+        const took = entry?.creditor ? nameOf(entry.creditor) : null;
+        return (
+            <div className="action-slot">
+            <div className="action-status" />
+            <div className="action-buttons action-buttons--bill">
+            <div className="paper framed bill" role="status" aria-label="You are out">
+                <div className="bill-band bill-band--out">
+                    <span className="print">Out of the game</span>
+                    <span className="mono bill-amount">{ordinalOut(room, me)}</span>
+                </div>
+                <div className="bill-body">
+                    <p className="bill-text">
+                        You went bankrupt{took ? <> to <b>{took}</b>, who took everything you owned</> : <>, and everything you owned went back to the bank</>}.
+                        {' '}There's no way back in — bankruptcy is final, and money can't be earned from the rail.
+                    </p>
+                    <div className="bill-short">You're watching the rest play out. The board, the log and chat all stay live.</div>
+                </div>
+            </div>
+            </div>
+            </div>
+        );
+    }
+
     if (room.ended || me.bankrupt) {
         // nothing to do
     } else if (myDebt) {
@@ -34,6 +76,9 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
             if (window.confirm(`Go bankrupt? Everything you own goes to ${to} and you're out of the game.`)) act('bankrupt');
         };
         return (
+            <div className="action-slot">
+            <div className="action-status" />
+            <div className="action-buttons action-buttons--bill">
             <div className="paper framed bill" role="alertdialog" aria-label="Payment due">
                 <div className="bill-band">
                     <span className="print">{billTitle(myDebt)}</span>
@@ -55,6 +100,8 @@ export default function ActionBar({ room, me, isMyTurn, act, busy, onManage }) {
                         <button className="btn paper-ghost bill-btn bill-danger" onClick={bankrupt}><Flag size={16} /> Go bankrupt</button>
                     </div>
                 </div>
+            </div>
+            </div>
             </div>
         );
     } else if (busy) {

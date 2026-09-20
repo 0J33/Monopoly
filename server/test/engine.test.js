@@ -198,3 +198,54 @@ test('decks keep 16 cards through reshuffles with a held jail card', () => {
     const held = r.jailFreeLedger[p.userId]?.chance || 0;
     assert.equal(r.chanceDeck.draw.length + r.chanceDeck.discard.length + held, 16);
 });
+
+/* ── Reported 2026-09-20 ────────────────────────────────────────────────── */
+
+test('station rent doubles with each one the owner holds', () => {
+    for (const n of [1, 2, 3, 4]) {
+        const r = newGame(2); const a = P(r, 0), b = P(r, 1);
+        [5, 15, 25, 35].slice(0, n).forEach(pos => { r.tileState[pos].owner = b.userId; b.owned.push(pos); });
+        a.position = 0; dice(2, 3);              // 0 + 5 = 5, a station
+        const before = a.cash;
+        engine.rollAndMove(r, a);
+        assert.equal(before - a.cash, 25 * 2 ** (n - 1), `${n} stations`);
+    }
+});
+
+test('utility rent is the roll times 4, or times 10 with both', () => {
+    for (const [n, mult] of [[1, 4], [2, 10]]) {
+        const r = newGame(2); const a = P(r, 0), b = P(r, 1);
+        [12, 28].slice(0, n).forEach(pos => { r.tileState[pos].owner = b.userId; b.owned.push(pos); });
+        a.position = 7; dice(2, 3);              // 7 + 5 = 12, a utility; sum 5
+        const before = a.cash;
+        engine.rollAndMove(r, a);
+        assert.equal(before - a.cash, 5 * mult, `${n} utilities`);
+    }
+});
+
+test('you cannot build or mortgage on someone else\'s turn', () => {
+    const r = newGame(2); const a = P(r, 0), b = P(r, 1);
+    // B owns a full set, but it is A's turn.
+    const group = r.board.tiles.find(t => t.type === 'property').group;
+    const set = r.board.tiles.filter(t => t.type === 'property' && t.group === group);
+    set.forEach(t => { r.tileState[t.pos].owner = b.userId; b.owned.push(t.pos); });
+    b.cash = 5000;
+    assert.equal(r.turnIndex, 0);
+    assert.equal(property.buildHouse(r, b, set[0].pos).error, 'not-your-turn');
+    assert.equal(property.mortgage(r, b, set[0].pos).error, 'not-your-turn');
+    // On their own turn it goes through.
+    r.turnIndex = 1;
+    assert.equal(property.buildHouse(r, b, set[0].pos).ok, true);
+});
+
+test('owing money lets you raise cash whoever\'s turn it is', () => {
+    const r = newGame(2); const a = P(r, 0), b = P(r, 1);
+    r.tileState[5].owner = b.userId; b.owned.push(5);
+    a.cash = 10;
+    a.position = 0; dice(2, 3);                  // lands on B's station, cannot pay
+    engine.rollAndMove(r, a);
+    assert.equal(r.debts.length, 1, 'a debt was raised');
+    r.turnIndex = 1;                             // and now it is not their turn
+    r.tileState[15].owner = a.userId; a.owned.push(15);
+    assert.equal(property.mortgage(r, a, 15).ok, true, 'a debtor can still mortgage');
+});

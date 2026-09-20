@@ -11,6 +11,10 @@ export default function AssetsModal({ room, me, act, onClose }) {
     const tiles = room.board.tiles;
     const debt = room.debts?.find(d => d.userId === me.userId);
     const inDebt = !!debt;
+    // Building and selling are turn actions. The exception is owing money:
+    // settling a debt is exactly when you have to be able to raise cash.
+    const myTurn = room.players[room.turnIndex]?.userId === me.userId;
+    const canAct = myTurn || inDebt;
 
     useEffect(() => {
         const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -32,6 +36,7 @@ export default function AssetsModal({ room, me, act, onClose }) {
             <div onClick={e => e.stopPropagation()} className="felt tray dealt" style={{ width: 760 }}>
                 <div className="tray-head">
                     <h2 className="print tray-title">Your deeds</h2>
+                    {!canAct && <span className="note tray-wait">Building and selling wait for your turn</span>}
                     <div style={{ flex: 1 }} />
                     <span className="note">${me.cash.toLocaleString()}</span>
                     <button className="btn sm ghost" onClick={onClose} aria-label="Close"><X size={15} /></button>
@@ -67,11 +72,11 @@ export default function AssetsModal({ room, me, act, onClose }) {
                                         const d = tiles[pos], st = room.tileState[pos];
                                         const h = st.houses || 0;
                                         const even = !room.rules.evenBuild;
-                                        const canBuild = full && !anyMortgaged && !st.mortgaged && h < 5 && (even || h === minH) && !inDebt && me.cash >= d.houseCost;
-                                        const canSell = d.type === 'property' && h > 0 && (even || h === maxH);
-                                        const canMortgage = !st.mortgaged && !(d.type === 'property' && maxH > 0);
+                                        const canBuild = canAct && full && !anyMortgaged && !st.mortgaged && h < 5 && (even || h === minH) && !inDebt && me.cash >= d.houseCost;
+                                        const canSell = canAct && d.type === 'property' && h > 0 && (even || h === maxH);
+                                        const canMortgage = canAct && !st.mortgaged && !(d.type === 'property' && maxH > 0);
                                         const unCost = Math.ceil(d.mortgage * room.rules.mortgageRebuyRate);
-                                        const canUnmortgage = st.mortgaged && !inDebt && me.cash >= unCost;
+                                        const canUnmortgage = canAct && st.mortgaged && !inDebt && me.cash >= unCost;
                                         return (
                                             <div key={pos} className={`mini-deed${st.mortgaged ? ' mortgaged' : ''}`}>
                                                 <div className="mini-band" style={{ background: d.color || 'var(--ink)' }} />
@@ -81,25 +86,33 @@ export default function AssetsModal({ room, me, act, onClose }) {
                                                         {st.mortgaged ? <b style={{ color: '#b3261e' }}>Mortgaged</b>
                                                             : h >= 5 ? 'Hotel' : h > 0 ? `${h} house${h > 1 ? 's' : ''}` : d.type === 'property' ? 'No buildings' : `Price $${d.price}`}
                                                     </div>
+                                                    {/* Every control, always, disabled when it does not apply.
+                                                        Buying a house used to ADD a Sell button, which pushed
+                                                        Mortgage down a row — so the card you were clicking
+                                                        rearranged itself under the cursor between clicks. A
+                                                        control that comes and goes is a control you have to
+                                                        re-find; one that greys out stays where you left it. */}
                                                     <div className="mini-actions">
-                                                        {d.type === 'property' && full && !st.mortgaged && h < 5 && (
-                                                            <button className="btn sm ink" disabled={!canBuild} onClick={() => act('build', { pos })} title={h === 4 ? 'Build a hotel' : 'Build a house'}>
-                                                                <Hammer size={12} /> {h === 4 ? 'Hotel' : 'House'} ${d.houseCost}
+                                                        {d.type === 'property' ? (
+                                                            <button className="btn sm ink" disabled={!canBuild} onClick={() => act('build', { pos })}
+                                                                title={!full ? 'You need the whole colour set' : h >= 5 ? 'Fully built' : h === 4 ? 'Build a hotel' : 'Build a house'}>
+                                                                <Hammer size={12} /> {h >= 5 ? 'Built' : h === 4 ? 'Hotel' : 'House'} ${d.houseCost}
                                                             </button>
-                                                        )}
-                                                        {h > 0 && (
-                                                            <button className="btn sm paper-ghost" disabled={!canSell} onClick={() => act('demolish', { pos })} title="Sell a building back at half price">
+                                                        ) : <span className="mini-slot" aria-hidden="true" />}
+                                                        {d.type === 'property' ? (
+                                                            <button className="btn sm paper-ghost" disabled={!canSell} onClick={() => act('demolish', { pos })}
+                                                                title={h > 0 ? 'Sell a building back at half price' : 'Nothing built here'}>
                                                                 <Trash2 size={12} /> +${Math.floor(d.houseCost / 2)}
                                                             </button>
-                                                        )}
-                                                        {!st.mortgaged && (
-                                                            <button className="btn sm paper-ghost" disabled={!canMortgage} onClick={() => act('mortgage', { pos })} title={canMortgage ? 'Mortgage for cash' : 'Sell the buildings in this set first'}>
-                                                                <Lock size={12} /> Mortgage +${d.mortgage}
-                                                            </button>
-                                                        )}
-                                                        {st.mortgaged && (
+                                                        ) : <span className="mini-slot" aria-hidden="true" />}
+                                                        {st.mortgaged ? (
                                                             <button className="btn sm ink" disabled={!canUnmortgage} onClick={() => act('unmortgage', { pos })}>
                                                                 <Unlock size={12} /> Unmortgage ${unCost}
+                                                            </button>
+                                                        ) : (
+                                                            <button className="btn sm paper-ghost" disabled={!canMortgage} onClick={() => act('mortgage', { pos })}
+                                                                title={canMortgage ? 'Mortgage for cash' : 'Sell the buildings in this set first'}>
+                                                                <Lock size={12} /> Mortgage +${d.mortgage}
                                                             </button>
                                                         )}
                                                     </div>

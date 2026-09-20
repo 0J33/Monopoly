@@ -81,6 +81,7 @@
 
 /* A deed as a small card you can hold in a hand (trade, your deeds). */
 .mini-deed {
+    position: relative;
     display: flex; flex-direction: column;
     width: 100%;
     text-align: left;
@@ -93,7 +94,18 @@
     transition: transform 0.15s var(--ease-out), border-color 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
 }
 button.mini-deed:hover:not(:disabled) { transform: translateY(-2px); }
-.mini-deed.picked { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 0 0 2px rgba(246,196,69,0.35), 0 10px 18px -6px rgba(0,0,0,0.7); }
+/* Selected, without moving. The card used to lift 4px, so picking three
+   properties made a grid of cards bob around under the cursor and the one you
+   were about to click had shifted by the time you got there. A selection is a
+   state, not a gesture: it gets a ring, a wash and a tick, all drawn inside
+   the space the card already occupies. */
+.mini-deed.picked {
+    border-color: var(--gold);
+    box-shadow: inset 0 0 0 2px var(--gold), 0 6px 14px -6px rgba(0,0,0,0.6);
+}
+/* The card already renders its own tick in the meta row; a second one in the
+   corner was just noise. Ring plus wash is the state. */
+.mini-deed.picked .mini-body { background: rgba(246,196,69,0.16); }
 .mini-deed:disabled { opacity: 0.5; cursor: not-allowed; }
 .mini-deed .mini-band { height: 12px; border-bottom: 1px solid rgba(0,0,0,0.25); }
 .mini-deed .mini-body { padding: 7px 9px 8px; min-width: 0; }
@@ -222,3 +234,17 @@ button.mini-deed:hover:not(:disabled) { transform: translateY(-2px); }
 .victory-row .place { width: 26px; font-family: var(--font-condensed); font-weight: 700; font-size: 18px; color: var(--ink-3); }
 .victory-row .who { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .victory-row .what { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }
+
+/* Why four buttons are greyed out. Without a reason, a disabled control reads
+   as a broken one. */
+.tray-wait {
+    color: var(--ink-3);
+    font-style: italic;
+}
+
+/* A deed card is always the same height, whatever state it is in: three action
+   slots, filled or held open. Mortgage and Unmortgage swap in place because
+   they are the same decision, not two. */
+.mini-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-content: start; }
+.mini-actions > :last-child { grid-column: 1 / -1; }
+.mini-slot { display: block; min-height: 28px; }

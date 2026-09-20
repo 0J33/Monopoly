@@ -1,8 +1,11 @@
 import React from 'react';
+import MoneyDelta from './MoneyDelta';
 import { Handshake, Lock, WifiOff, AlertTriangle, UserX } from 'lucide-react';
 import { canRemove, netWorth } from './playerStatus';
 
-export default function PlayerPanel({ p, me, isMe, isActive, room, onTrade, onRemove, onTileClick }) {
+export default function PlayerPanel({ p, shownCash, me, isMe, isActive, room, onTrade, onRemove, onTileClick }) {
+    // The panel shows money on the animation's beat, not the packet's.
+    const cash = typeof shownCash === 'number' ? shownCash : p.cash;
     const jailCards = (room.jailFreeLedger?.[p.userId]?.chance || 0) + (room.jailFreeLedger?.[p.userId]?.chest || 0);
     const owes = room.debts?.find(d => d.userId === p.userId);
     const removable = canRemove(room, p, me);
@@ -12,12 +15,14 @@ export default function PlayerPanel({ p, me, isMe, isActive, room, onTrade, onRe
 
     return (
         <div className="card" style={{
+            position: 'relative',
             padding: 12,
             borderColor: isActive ? p.color : 'var(--border)',
             boxShadow: isActive ? `0 0 0 2px ${p.color}55, var(--shadow)` : 'var(--shadow)',
             opacity: p.bankrupt ? 0.45 : 1,
             transition: 'border-color 0.2s, box-shadow 0.2s',
         }}>
+            <MoneyDelta cash={cash} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                     flex: '0 0 auto',
@@ -59,7 +64,7 @@ export default function PlayerPanel({ p, me, isMe, isActive, room, onTrade, onRe
             </div>
             {!p.bankrupt && (
                 <div style={{ display: 'flex', gap: 10, marginTop: 10, fontSize: 12 }}>
-                    <Stat label="Cash"><span className="money" style={{ fontSize: 15 }}>${p.cash.toLocaleString()}</span></Stat>
+                    <Stat label="Cash"><span className="money" style={{ fontSize: 15 }}>${cash.toLocaleString()}</span></Stat>
                     <Stat label="Worth"><span className="mono" style={{ fontSize: 15, fontWeight: 600 }}>${netWorth(room, p).toLocaleString()}</span></Stat>
                     {jailCards > 0 && <Stat label="Jail free"><span className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{jailCards}</span></Stat>}
                 </div>

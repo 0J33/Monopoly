@@ -25,6 +25,7 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                     state={tileState[i]}
                     players={players}
                     board={room?.board}
+                    room={room}
                     onClick={() => onTileClick?.(i)}
                     onHover={(e, def) => setHovered(def ? { def, state: tileState[i], e } : null)}
                 />

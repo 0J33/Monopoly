@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { readable } from '../../colors';
 import { Send, X, MessageSquare } from 'lucide-react';
 import { play } from '../../sound';
 
@@ -45,7 +46,7 @@ export default function ChatPanel({ chat, sendChat, me, players = [], open, onOp
                     className="btn"
                     onClick={onOpen}
                     style={{
-                        position: 'fixed', right: 16, bottom: 16, zIndex: 80,
+                        position: 'fixed', right: 16, bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', zIndex: 80,
                         borderRadius: 999, width: 48, height: 48, padding: 0,
                         justifyContent: 'center',
                         background: 'var(--accent)',
@@ -105,7 +106,7 @@ export default function ChatPanel({ chat, sendChat, me, players = [], open, onOp
                                     {!m.system && (
                                         <span style={{
                                             fontWeight: 700,
-                                            color: players.find(p => p.userId === m.userId)?.color || 'var(--text-2)',
+                                            color: readable(players.find(p => p.userId === m.userId)?.color) || 'var(--text-2)',
                                         }}>{m.userId === me?.userId ? 'You' : m.username}: </span>
                                     )}
                                     <span>{m.text}</span>

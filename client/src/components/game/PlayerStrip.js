@@ -7,7 +7,7 @@ import { canRemove } from './playerStatus';
 // 2×2 grid for three or four, three / four columns beyond that. Names
 // truncate inside their own cell; the trade button has its own slot so it
 // never sits on top of a name.
-export default function PlayerStrip({ room, me, onTrade, onRemove }) {
+export default function PlayerStrip({ room, me, onTrade, onRemove, shownCash }) {
     const active = room.players[room.turnIndex];
     const n = room.players.length;
     const cols = n <= 2 ? n : n <= 4 ? 2 : n <= 6 ? 3 : 4;
@@ -56,7 +56,7 @@ export default function PlayerStrip({ room, me, onTrade, onRemove }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
                                 {p.bankrupt
                                     ? <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 700 }}>Out</span>
-                                    : <span className="money" style={{ fontSize: 12 }}>${p.cash.toLocaleString()}</span>}
+                                    : <span className="money" style={{ fontSize: 12 }}>${(typeof shownCash?.[p.userId] === 'number' ? shownCash[p.userId] : p.cash).toLocaleString()}</span>}
                                 {!compact && !p.bankrupt && <span className="mono" style={{ fontSize: 10, color: 'var(--text-3)' }}>· {p.owned?.length || 0}</span>}
                                 {p.inJail && <Lock size={10} color="var(--warning)" />}
                                 {owes && <AlertTriangle size={10} color="var(--danger)" />}

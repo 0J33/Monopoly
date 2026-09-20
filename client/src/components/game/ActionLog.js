@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { readable } from '../../colors';
 
 // Renders a formatted event history. Log entries have `kind` + varying payload;
 // we translate each into a short human string with player colors. Tile names
@@ -11,9 +12,24 @@ export default function ActionLog({ log, players, tiles, board, padBottom = 0 })
     const pinned = useRef(true);
     const lastId = log?.[log.length - 1]?.id;
 
+    // Following the newest entry cannot be a one-shot on "a new id arrived".
+    // The log reveals entries in batches, rows wrap to two lines once a name
+    // is long enough, and the turn separators appear with them — so the list
+    // keeps growing for several frames after the effect has already run and
+    // set scrollTop against a height that was about to change. That is the
+    // "sometimes": it scrolled to the end of the list as it was, and the end
+    // moved. A ResizeObserver follows the content instead of the render.
     useEffect(() => {
         const el = ref.current;
-        if (el && pinned.current) el.scrollTop = el.scrollHeight;
+        if (!el) return undefined;
+        const stick = () => { if (pinned.current) el.scrollTop = el.scrollHeight; };
+        stick();
+        const ro = new ResizeObserver(stick);
+        // Observe the content, not the box: the box's size is fixed, the
+        // content's is what grows.
+        if (el.firstElementChild) ro.observe(el.firstElementChild);
+        ro.observe(el);
+        return () => ro.disconnect();
     }, [lastId]);
 
     function onScroll() {
@@ -23,7 +39,7 @@ export default function ActionLog({ log, players, tiles, board, padBottom = 0 })
 
     const nameOf = (uid) => {
         const p = players.find(x => x.userId === uid);
-        return p ? <span className="log-name" style={{ color: p.color }}>{p.username}</span> : 'someone';
+        return p ? <span className="log-name" style={{ color: readable(p.color) }}>{p.username}</span> : 'someone';
     };
     const tile = (pos) => {
         const t = tiles?.[pos];

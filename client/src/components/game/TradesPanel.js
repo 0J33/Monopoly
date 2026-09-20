@@ -18,7 +18,7 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
                     className="btn"
                     onClick={() => setExpanded(true)}
                     style={{
-                        position: 'fixed', left: 16, bottom: 16, zIndex: 70,
+                        position: 'fixed', left: 16, bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', zIndex: 70,
                         borderRadius: 999, height: 40, padding: '0 14px',
                         background: count > 0 ? 'var(--accent)' : 'var(--surface-2)',
                         borderColor: count > 0 ? 'var(--accent)' : 'var(--border)',
