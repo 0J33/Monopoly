@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Gavel, X } from 'lucide-react';
 import Deed from './Deed';
 import Puck from '../common/Puck';
+import { serverNow } from '../../serverTime';
 import './menus.css';
 
 // The auction block: the deed up for sale beside the bidding card. The clock
@@ -17,7 +18,7 @@ export default function AuctionModal({ room, me, act }) {
     }, [a?.currentBid]);
     useEffect(() => {
         if (!a) return;
-        const tick = () => setMsLeft(Math.max(0, a.endsAt - Date.now()));
+        const tick = () => setMsLeft(Math.max(0, a.endsAt - serverNow()));
         tick();
         const t = setInterval(tick, 100);
         return () => clearInterval(t);

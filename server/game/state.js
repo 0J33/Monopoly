@@ -245,6 +245,10 @@ function publicView(room) {
         extraRoll: room.extraRoll,
         turnNumber: room.turnNumber,
         spectators: room.spectators.map(s => ({ userId: s.userId, username: s.username })),
+        // The client compares server timestamps (an auction deadline, a
+        // disconnect) against "now". Its own clock is a different clock, so
+        // it gets ours and corrects for the difference.
+        now: Date.now(),
         turnIndex: room.turnIndex,
         turnPhase: room.turnPhase,
         turnStartedAt: room.turnStartedAt,

@@ -4,6 +4,7 @@
 // (animations, sound) drain from.
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { noteServerTime } from './serverTime';
 import { useParams, useNavigate } from 'react-router-dom';
 import { connectSocket, onState, onChat, onChatHistory, onKicked, emit, disconnectSocket } from './socket';
 import { playEvents } from './sound';
@@ -33,6 +34,7 @@ export default function useRoom({ userId, pushToast }) {
             // Ignore anything older than what's on screen (a slow packet
             // arriving after a newer one must not rewind the board).
             if (r.version < seenVersion.current) return;
+            noteServerTime(r.now);
             setRoom(r);
             if (r.version > seenVersion.current) {
                 seenVersion.current = r.version;

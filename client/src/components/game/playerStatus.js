@@ -1,3 +1,4 @@
+import { serverNow } from '../../serverTime';
 // Shared player-status helpers for the desktop panel and the mobile strip.
 
 // Mirrors the server's OFFLINE_REMOVE_MS: a player offline this long can be
@@ -7,7 +8,7 @@ export const OFFLINE_REMOVE_MS = 60000;
 export function canRemove(room, p, me) {
     if (!room?.started || room.ended || !me || me.bankrupt || p.bankrupt) return false;
     if (p.userId === me.userId || p.connected || !p.disconnectedAt) return false;
-    return Date.now() - p.disconnectedAt >= OFFLINE_REMOVE_MS;
+    return serverNow() - p.disconnectedAt >= OFFLINE_REMOVE_MS;
 }
 
 // Cash + what everything would fetch from the bank: mortgage value of each

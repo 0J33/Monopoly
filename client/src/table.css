@@ -154,7 +154,10 @@
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.9);
     box-shadow: 0 2px 5px rgba(0,0,0,0.55), inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45);
-    display: grid; place-items: center;
+    /* Centred under grid AND under flex. place-items is the grid answer and
+       justify-content the flex one; a puck that gets re-declared as a flex
+       box by some container's `span` rule still centres its initial. */
+    display: grid; place-items: center; justify-content: center;
     font-weight: 800; font-size: 14px;
     transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
 }

@@ -151,7 +151,11 @@ button.mini-deed:hover:not(:disabled) { transform: translateY(-2px); }
 .auction-pass { width: 100%; justify-content: center; margin-top: 10px; }
 .auction-list { display: flex; justify-content: space-between; margin-top: 14px; padding: 8px 2px; border-top: 1px solid var(--rule); font-size: 14px; }
 .auction-who { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 14px; font-weight: 600; }
-.auction-who span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+/* `>`, not a descendant: the puck inside each of these IS a span, so the
+   bare selector re-declared it as a flex box. place-items then did half its
+   job — align-items still centres under flex, justify-items does nothing at
+   all — and every initial sat hard against the left edge of its circle. */
+.auction-who > span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .auction-who span.out { opacity: 0.45; text-decoration: line-through; }
 @media (max-width: 720px) {
     .auction-deed { display: none; }
